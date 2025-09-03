@@ -122,6 +122,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const roomCode = generateRoomCode();
             const playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             
+            console.log(`Creating room ${roomCode} for player ${parsed.playerName} (${playerId})`);
+            
             const gameState = createGame(roomCode, parsed.playerName, playerId);
             await storage.createRoom(gameState);
             
@@ -135,11 +137,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             roomConnections.get(roomCode)!.add(socket);
             
+            console.log(`Sending room:created event for ${roomCode}`);
             sendToSocket(socket, {
               type: 'room:created',
               data: { roomCode, playerId }
             });
             
+            console.log(`Sending initial state update for ${roomCode}`);
             sendToSocket(socket, {
               type: 'state:update',
               data: gameState

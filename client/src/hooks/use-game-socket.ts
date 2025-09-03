@@ -28,6 +28,7 @@ export function useGameSocket(): UseGameSocketReturn {
   useEffect(() => {
     // Set up message handlers
     gameSocket.on('room:created', (data) => {
+      console.log('Room created:', data);
       setRoomCode(data.roomCode);
       setPlayerId(data.playerId);
       toast({
@@ -74,8 +75,18 @@ export function useGameSocket(): UseGameSocketReturn {
   }, [toast]);
   
   const createRoom = useCallback((playerName: string) => {
+    console.log('Creating room for player:', playerName);
+    console.log('Socket connected:', gameSocket.isConnected());
+    if (!gameSocket.isConnected()) {
+      toast({
+        title: "Connection Error",
+        description: "Not connected to server. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
     gameSocket.send('room:create', { playerName });
-  }, []);
+  }, [toast]);
   
   const joinRoom = useCallback((roomCode: string, playerName: string) => {
     gameSocket.send('room:join', { roomCode, playerName });
