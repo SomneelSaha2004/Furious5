@@ -20,10 +20,33 @@ interface UseGameSocketReturn {
 
 export function useGameSocket(): UseGameSocketReturn {
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
-  const [roomCode, setRoomCode] = useState<string | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(() => 
+    localStorage.getItem('furious-five-player-id')
+  );
+  const [roomCode, setRoomCode] = useState<string | null>(() => 
+    localStorage.getItem('furious-five-room-code')
+  );
   const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
+  
+  // Persist to localStorage when states change
+  useEffect(() => {
+    if (playerId) {
+      localStorage.setItem('furious-five-player-id', playerId);
+    } else {
+      localStorage.removeItem('furious-five-player-id');
+    }
+  }, [playerId]);
+  
+  useEffect(() => {
+    if (roomCode) {
+      localStorage.setItem('furious-five-room-code', roomCode);
+      console.log('Saved roomCode to localStorage:', roomCode);
+    } else {
+      localStorage.removeItem('furious-five-room-code');
+      console.log('Removed roomCode from localStorage');
+    }
+  }, [roomCode]);
   
   useEffect(() => {
     // Set up message handlers
