@@ -57,7 +57,8 @@ export function useGameSocket(): UseGameSocketReturn {
       setPlayerId(data.playerId);
       toast({
         title: "Room Created",
-        description: `Room code: ${data.roomCode}`,
+        description: `Room code: ${data.roomCode}. Click "Go to Lobby" to join.`,
+        duration: 5000,
       });
     });
     

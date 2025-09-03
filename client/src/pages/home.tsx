@@ -12,14 +12,7 @@ export default function Home() {
   const [joinRoomCode, setJoinRoomCode] = useState('');
   const { createRoom, joinRoom, roomCode } = useGameSocket();
   
-  // Redirect to game when room is joined/created
-  useEffect(() => {
-    console.log('roomCode changed:', roomCode);
-    if (roomCode) {
-      console.log('Redirecting to /game');
-      setLocation('/game');
-    }
-  }, [roomCode, setLocation]);
+  // Don't auto-redirect, let the user manually navigate
   
   const handleCreateRoom = () => {
     if (!playerName.trim()) return;
@@ -29,6 +22,12 @@ export default function Home() {
   const handleJoinRoom = () => {
     if (!playerName.trim() || !joinRoomCode.trim()) return;
     joinRoom(joinRoomCode.trim().toUpperCase(), playerName.trim());
+  };
+  
+  const handleGoToLobby = () => {
+    if (roomCode) {
+      setLocation('/game');
+    }
   };
   
   return (
@@ -79,15 +78,33 @@ export default function Home() {
                   data-testid="input-player-name"
                 />
               </div>
-              <Button
-                className="w-full"
-                onClick={handleCreateRoom}
-                disabled={!playerName.trim()}
-                data-testid="button-create-room"
-              >
-                <i className="fas fa-plus mr-2" />
-                Create Room
-              </Button>
+              
+              {!roomCode ? (
+                <Button
+                  className="w-full"
+                  onClick={handleCreateRoom}
+                  disabled={!playerName.trim()}
+                  data-testid="button-create-room"
+                >
+                  <i className="fas fa-plus mr-2" />
+                  Create Room
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-center">
+                    <div className="text-sm text-muted-foreground mb-1">Room Created:</div>
+                    <div className="text-xl font-mono font-bold text-primary">{roomCode}</div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={handleGoToLobby}
+                    data-testid="button-go-to-lobby"
+                  >
+                    <i className="fas fa-arrow-right mr-2" />
+                    Go to Lobby
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
           
