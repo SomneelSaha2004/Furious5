@@ -396,6 +396,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           }
           
+          case 'game:getState': {
+            if (!socket.roomCode) {
+              sendError(socket, 'NOT_IN_ROOM', 'Not in a room');
+              break;
+            }
+            
+            const gameState = await storage.getRoom(socket.roomCode);
+            if (!gameState) {
+              sendError(socket, 'ROOM_NOT_FOUND', 'Room not found');
+              break;
+            }
+            
+            console.log(`Sending current game state for room ${socket.roomCode}`);
+            sendToSocket(socket, {
+              type: 'state:update',
+              data: gameState
+            });
+            
+            break;
+          }
+
           default:
             sendError(socket, 'UNKNOWN_MESSAGE', `Unknown message type: ${message.type}`);
         }

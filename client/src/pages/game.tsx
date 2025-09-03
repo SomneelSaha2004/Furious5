@@ -17,8 +17,28 @@ export default function Game() {
     dropCards,
     drawFromDeck,
     drawFromTable,
-    startNewRound 
+    startNewRound,
+    requestGameState
   } = useGameSocket();
+  
+  // Request game state when page loads and we have room info
+  useEffect(() => {
+    if (roomCode && playerId && !gameState && isConnected) {
+      console.log('Page loaded with room info, requesting game state...');
+      // First try to get the state directly
+      requestGameState();
+      
+      // If that doesn't work after a delay, it means we need to rejoin
+      const timeout = setTimeout(() => {
+        if (!gameState) {
+          console.log('No game state received, attempting to rejoin room...');
+          // We'll need to trigger a rejoin by sending room:join with existing data
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [roomCode, playerId, gameState, isConnected, requestGameState]);
   
   // Redirect to home if not in a room (with delay to allow socket to connect)
   const [shouldRedirect, setShouldRedirect] = useState(false);
@@ -52,11 +72,15 @@ export default function Game() {
   }
   
   if (!gameState) {
+    console.log('No gameState available. roomCode:', roomCode, 'playerId:', playerId);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <i className="fas fa-spinner fa-spin text-4xl text-primary mb-4" />
           <p className="text-muted-foreground">Loading game...</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Room: {roomCode || 'None'} | Player: {playerId || 'None'}
+          </p>
         </div>
       </div>
     );

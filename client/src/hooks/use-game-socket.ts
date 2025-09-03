@@ -16,6 +16,7 @@ interface UseGameSocketReturn {
   drawFromDeck: () => void;
   drawFromTable: (cardIndex: number) => void;
   startNewRound: () => void;
+  requestGameState: () => void;
 }
 
 export function useGameSocket(): UseGameSocketReturn {
@@ -72,6 +73,7 @@ export function useGameSocket(): UseGameSocketReturn {
     });
     
     gameSocket.on('state:update', (data: GameState) => {
+      console.log('Received state update:', data);
       setGameState(data);
     });
     
@@ -143,6 +145,13 @@ export function useGameSocket(): UseGameSocketReturn {
     gameSocket.send('round:new');
   }, []);
   
+  const requestGameState = useCallback(() => {
+    console.log('Requesting current game state...');
+    if (roomCode && playerId) {
+      gameSocket.send('game:getState');
+    }
+  }, [roomCode, playerId]);
+  
   return {
     gameState,
     playerId,
@@ -156,5 +165,6 @@ export function useGameSocket(): UseGameSocketReturn {
     drawFromDeck,
     drawFromTable,
     startNewRound,
+    requestGameState,
   };
 }
