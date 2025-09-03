@@ -150,15 +150,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           case 'room:join': {
             const parsed = JoinRoomSchema.parse(message.data);
+            console.log(`Player attempting to join room: ${parsed.roomCode} as ${parsed.playerName}`);
+            
             const gameState = await storage.getRoom(parsed.roomCode);
             
             if (!gameState) {
+              console.log(`Room not found: ${parsed.roomCode}`);
               sendError(socket, 'ROOM_NOT_FOUND', 'Room not found');
               break;
             }
             
             if (gameState.phase !== 'lobby') {
+              console.log(`Game already in progress in room: ${parsed.roomCode}`);
               sendError(socket, 'GAME_IN_PROGRESS', 'Game already in progress');
+              break;
+            }
+            
+            // Check if player is already in this room (prevent duplicate joins)
+            if (gameState.players.some(p => p.name === parsed.playerName)) {
+              console.log(`Player ${parsed.playerName} already in room ${parsed.roomCode}`);
+              sendError(socket, 'PLAYER_ALREADY_EXISTS', 'A player with that name is already in the room');
               break;
             }
             
@@ -178,6 +189,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               roomConnections.get(parsed.roomCode)!.add(socket);
               
+              console.log(`Player ${parsed.playerName} successfully joined room ${parsed.roomCode}`);
+              
               sendToSocket(socket, {
                 type: 'room:joined',
                 data: { roomCode: parsed.roomCode, playerId }
@@ -190,6 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
               
             } catch (error) {
+              console.log(`Failed to join room: ${(error as Error).message}`);
               sendError(socket, 'JOIN_FAILED', (error as Error).message);
             }
             
