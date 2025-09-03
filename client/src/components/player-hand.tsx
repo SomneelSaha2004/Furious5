@@ -85,7 +85,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
     if (!validDrop || !currentPlayer) return;
     
     if (validateDrop(currentPlayer.hand, validDrop)) {
-      onDropCards(validDrop.cards, validDrop.kind);
+      onDropCards(validDrop.cards, validDrop.kind as any);
       setSelectedCards(new Set());
     }
   };

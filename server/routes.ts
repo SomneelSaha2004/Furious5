@@ -287,7 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             try {
-              const updatedState = applyDrop(gameState, socket.playerId, parsed.drop);
+              const updatedState = applyDrop(gameState, socket.playerId, parsed.drop as any);
               checkInvariants(updatedState);
               await storage.updateRoom(socket.roomCode, updatedState);
               
