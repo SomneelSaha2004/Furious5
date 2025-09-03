@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { LobbyView } from '@/components/lobby-view';
 import { GameTableView } from '@/components/game-table-view';
@@ -19,10 +20,35 @@ export default function Game() {
     startNewRound 
   } = useGameSocket();
   
-  // Redirect to home if not in a room
+  // Redirect to home if not in a room (with delay to allow socket to connect)
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!roomCode || !playerId) {
+        setShouldRedirect(true);
+      }
+    }, 2000); // Give 2 seconds for connection to establish
+    
+    return () => clearTimeout(timer);
+  }, [roomCode, playerId]);
+  
+  useEffect(() => {
+    if (shouldRedirect) {
+      setLocation('/');
+    }
+  }, [shouldRedirect, setLocation]);
+  
+  // Show loading while checking connection
   if (!roomCode || !playerId) {
-    setLocation('/');
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <i className="fas fa-spinner fa-spin text-4xl text-primary mb-4" />
+          <p className="text-muted-foreground">Connecting to game...</p>
+        </div>
+      </div>
+    );
   }
   
   if (!gameState) {
