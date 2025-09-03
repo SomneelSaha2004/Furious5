@@ -29,6 +29,7 @@ export function useGameSocket(): UseGameSocketReturn {
     // Set up message handlers
     gameSocket.on('room:created', (data) => {
       console.log('Room created:', data);
+      console.log('Setting roomCode to:', data.roomCode);
       setRoomCode(data.roomCode);
       setPlayerId(data.playerId);
       toast({

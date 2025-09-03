@@ -14,7 +14,9 @@ export default function Home() {
   
   // Redirect to game when room is joined/created
   useEffect(() => {
+    console.log('roomCode changed:', roomCode);
     if (roomCode) {
+      console.log('Redirecting to /game');
       setLocation('/game');
     }
   }, [roomCode, setLocation]);
