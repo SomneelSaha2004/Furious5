@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,10 +13,11 @@ export default function Home() {
   const { createRoom, joinRoom, roomCode } = useGameSocket();
   
   // Redirect to game when room is joined/created
-  if (roomCode) {
-    setLocation('/game');
-    return null;
-  }
+  useEffect(() => {
+    if (roomCode) {
+      setLocation('/game');
+    }
+  }, [roomCode, setLocation]);
   
   const handleCreateRoom = () => {
     if (!playerName.trim()) return;

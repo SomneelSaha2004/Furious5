@@ -58,7 +58,7 @@ export class MemStorage implements IStorage {
     const now = Date.now();
     const maxInactiveTime = 2 * 60 * 60 * 1000; // 2 hours
     
-    for (const [roomCode, lastActive] of this.lastActivity) {
+    for (const [roomCode, lastActive] of Array.from(this.lastActivity)) {
       if (now - lastActive > maxInactiveTime) {
         this.rooms.delete(roomCode);
         this.lastActivity.delete(roomCode);

@@ -198,7 +198,10 @@ export function startRound(state: GameState): GameState {
   for (let i = 0; i < 5; i++) {
     for (let j = 0; j < players.length; j++) {
       if (deckCopy.length > 0) {
-        players[j].hand.push(deckCopy.pop()!);
+        const card = deckCopy.pop();
+        if (card) {
+          players[j].hand.push(card);
+        }
       }
     }
   }

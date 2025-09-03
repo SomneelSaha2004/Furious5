@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import type { GameState } from '@shared/game-types';
 
 interface LobbyViewProps {
@@ -7,6 +8,7 @@ interface LobbyViewProps {
 }
 
 export function LobbyView({ gameState, onStartGame }: LobbyViewProps) {
+  const { toast } = useToast();
   const canStart = gameState.players.length >= 2;
   
   return (
@@ -61,6 +63,34 @@ export function LobbyView({ gameState, onStartGame }: LobbyViewProps) {
           </ul>
         </div>
 
+        {/* Room Code Display */}
+        <div className="mb-6 text-center">
+          <h4 className="font-semibold text-foreground mb-3">Share Room Code</h4>
+          <div className="bg-primary/10 border-2 border-primary/20 rounded-lg p-4">
+            <div className="text-3xl font-mono font-bold text-primary mb-2" data-testid="room-code-display">
+              {gameState.roomCode}
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Share this code with friends so they can join your game
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(gameState.roomCode);
+                toast({
+                  title: "Room code copied!",
+                  description: "Share this code with friends to join your game",
+                });
+              }}
+              data-testid="button-copy-code"
+              className="w-full"
+            >
+              <i className="fas fa-copy mr-2" />
+              Copy Room Code
+            </Button>
+          </div>
+        </div>
+
         <div className="flex space-x-4">
           <Button
             className="flex-1"
@@ -70,16 +100,6 @@ export function LobbyView({ gameState, onStartGame }: LobbyViewProps) {
           >
             <i className="fas fa-play mr-2" />
             {canStart ? 'Start Game' : `Need ${2 - gameState.players.length} more players`}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              navigator.clipboard.writeText(gameState.roomCode);
-            }}
-            data-testid="button-copy-code"
-          >
-            <i className="fas fa-copy mr-2" />
-            Copy Room Code
           </Button>
         </div>
       </div>

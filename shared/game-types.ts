@@ -86,6 +86,8 @@ export const DropCardsSchema = z.object({
   drop: DropSchema
 });
 
+export type DropCardsData = z.infer<typeof DropCardsSchema>;
+
 export const DrawFromTableSchema = z.object({
   cardIndex: z.number()
 });

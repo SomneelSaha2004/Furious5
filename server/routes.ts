@@ -9,7 +9,8 @@ import {
   DropCardsSchema,
   DrawFromTableSchema,
   GameStateSchema,
-  ErrorSchema
+  ErrorSchema,
+  type DropCardsData
 } from "@shared/game-types";
 import {
   createGame,
@@ -56,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!connections) return;
     
     const messageStr = JSON.stringify(message);
-    for (const socket of connections) {
+    for (const socket of Array.from(connections)) {
       if (socket !== excludeSocket && socket.readyState === WebSocket.OPEN) {
         socket.send(messageStr);
       }
@@ -259,7 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               break;
             }
             
-            const parsed = DropCardsSchema.parse(message.data);
+            const parsed: DropCardsData = DropCardsSchema.parse(message.data);
             const gameState = await storage.getRoom(socket.roomCode);
             
             if (!gameState) {
