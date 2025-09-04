@@ -70,6 +70,12 @@ export function isStraight(cards: Card[]): boolean {
   
   const ranks = cards.map(card => card.r).sort((a, b) => a - b);
   
+  // Check for duplicates first - straights can't have duplicate ranks
+  const uniqueRanks = [...new Set(ranks)];
+  if (uniqueRanks.length !== ranks.length) {
+    return false;
+  }
+  
   // Check for consecutive ranks
   for (let i = 1; i < ranks.length; i++) {
     if (ranks[i] !== ranks[i-1] + 1) {
@@ -78,6 +84,20 @@ export function isStraight(cards: Card[]): boolean {
   }
   
   return true;
+}
+
+// Helper function to sort cards for display
+export function sortCardsForDisplay(cards: Card[], dropKind?: string): Card[] {
+  if (dropKind === 'straight') {
+    // Sort straights by rank for proper display
+    return [...cards].sort((a, b) => a.r - b.r);
+  }
+  
+  // For other combinations, sort by rank then suit for consistency
+  return [...cards].sort((a, b) => {
+    if (a.r !== b.r) return a.r - b.r;
+    return a.s.localeCompare(b.s);
+  });
 }
 
 export function validateDrop(hand: Card[], drop: Drop): boolean {

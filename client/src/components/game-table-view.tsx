@@ -3,7 +3,7 @@ import { PlayerHand } from './player-hand';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { GameState, Player, Card as CardType } from '@shared/game-types';
-import { canDrawFromTable, sumPoints } from '@shared/game-engine';
+import { canDrawFromTable, sumPoints, sortCardsForDisplay } from '@shared/game-engine';
 
 interface GameTableViewProps {
   gameState: GameState;
@@ -169,7 +169,7 @@ export function GameTableView({
           {/* Current table drop cards */}
           {gameState.tableDrop ? (
             <div className="flex justify-center space-x-2 mb-4">
-              {gameState.tableDrop.cards.map((card, index) => (
+              {sortCardsForDisplay(gameState.tableDrop.cards, gameState.tableDrop.kind).map((card, index) => (
                 <Card
                   key={`${card.r}-${card.s}-${index}`}
                   card={card}
@@ -186,17 +186,19 @@ export function GameTableView({
           {/* Draw from table buttons */}
           {canDrawFromTableNow && gameState.tableDrop && (
             <div className="flex space-x-2 flex-wrap gap-1">
-              {gameState.tableDrop.cards.map((card, index) => {
-                const canDraw = canDrawFromTable(gameState.tableDrop, index);
+              {sortCardsForDisplay(gameState.tableDrop.cards, gameState.tableDrop.kind).map((card, index) => {
+                // Find original index for the action
+                const originalIndex = gameState.tableDrop!.cards.findIndex(c => c.r === card.r && c.s === card.s);
+                const canDraw = canDrawFromTable(gameState.tableDrop, originalIndex);
                 if (!canDraw) return null;
                 
                 return (
                   <Button
-                    key={index}
+                    key={originalIndex}
                     variant="secondary"
                     size="sm"
-                    onClick={() => onDrawFromTable(index)}
-                    data-testid={`button-draw-table-${index}`}
+                    onClick={() => onDrawFromTable(originalIndex)}
+                    data-testid={`button-draw-table-${originalIndex}`}
                   >
                     Take {card.r === 1 ? 'A' : 
                           card.r === 11 ? 'J' : 
