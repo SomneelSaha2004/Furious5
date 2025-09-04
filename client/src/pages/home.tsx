@@ -135,7 +135,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       {/* Theme Toggle */}
-<div className="fixed top-6 right-4 z-50">
+      <div className="fixed right-4 z-50" style={{ top: '124px' }}>
         <ThemeToggle />
       </div>
       
