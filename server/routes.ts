@@ -27,6 +27,8 @@ interface ExtendedWebSocket extends WebSocket {
   playerId?: string;
   roomCode?: string;
   playerName?: string;
+  lastPing?: number;
+  disconnectTimer?: NodeJS.Timeout;
 }
 
 interface SocketMessage {
@@ -108,15 +110,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error updating player connection:', error);
     }
   }
+
+  function scheduleDisconnect(socket: ExtendedWebSocket): void {
+    // Clear any existing timer
+    if (socket.disconnectTimer) {
+      clearTimeout(socket.disconnectTimer);
+    }
+    
+    // Set a 15-second grace period before marking as disconnected
+    socket.disconnectTimer = setTimeout(async () => {
+      if (socket.roomCode && socket.playerId) {
+        console.log(`Player ${socket.playerId} marked as disconnected after grace period`);
+        await updatePlayerConnection(socket.roomCode, socket.playerId, false);
+      }
+    }, 15000); // 15 second grace period
+  }
+
+  function cancelDisconnect(socket: ExtendedWebSocket): void {
+    if (socket.disconnectTimer) {
+      clearTimeout(socket.disconnectTimer);
+      socket.disconnectTimer = undefined;
+    }
+  }
   
   wss.on('connection', (socket: ExtendedWebSocket) => {
     console.log('New WebSocket connection');
+    
+    // Initialize ping tracking
+    socket.lastPing = Date.now();
+    
+    // Handle ping/pong for connection health
+    socket.on('pong', () => {
+      socket.lastPing = Date.now();
+      cancelDisconnect(socket);
+    });
     
     socket.on('message', async (data) => {
       try {
         const message: SocketMessage = JSON.parse(data.toString());
         
+        // Update last activity timestamp for any message
+        socket.lastPing = Date.now();
+        cancelDisconnect(socket);
+        
         switch (message.type) {
+          case 'ping': {
+            // Respond to ping with pong
+            sendToSocket(socket, { type: 'pong', data: {} });
+            break;
+          }
           case 'room:create': {
             const parsed = CreateRoomSchema.parse(message.data);
             const roomCode = generateRoomCode();
@@ -440,8 +482,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Update player connection status
-        await updatePlayerConnection(socket.roomCode, socket.playerId, false);
+        // Start grace period instead of immediately disconnecting
+        scheduleDisconnect(socket);
       }
     });
     
@@ -449,6 +491,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('WebSocket error:', error);
     });
   });
+
+  // Periodic health check for all connections
+  setInterval(() => {
+    roomConnections.forEach((connections, roomCode) => {
+      connections.forEach((socket) => {
+        if (socket.readyState === WebSocket.OPEN) {
+          // Send ping to client
+          socket.ping();
+          
+          // Check if we haven't heard from this socket in too long
+          const timeSinceLastPing = Date.now() - (socket.lastPing || 0);
+          if (timeSinceLastPing > 30000) { // 30 seconds
+            console.log(`No response from ${socket.playerId} in ${timeSinceLastPing}ms, scheduling disconnect`);
+            scheduleDisconnect(socket);
+          }
+        }
+      });
+    });
+  }, 10000); // Check every 10 seconds
   
   // HTTP endpoints as backup for room operations
   app.post('/api/rooms', async (req, res) => {
