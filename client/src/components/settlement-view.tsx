@@ -82,20 +82,20 @@ export function SettlementView({ gameState, onStartNewRound }: SettlementViewPro
         </div>
 
         {/* Running Totals */}
-        <div className="bg-secondary rounded-lg p-6 mb-8">
+        <div className="bg-card border border-border rounded-lg p-6 mb-8">
           <h3 className="text-lg font-semibold text-foreground mb-4 text-center">
             Running Totals
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {gameState.players.map((player, index) => (
               <div key={player.id} className="text-center">
-                <div className="font-medium text-sm" data-testid={`total-player-name-${index}`}>
+                <div className="font-medium text-sm text-foreground" data-testid={`total-player-name-${index}`}>
                   {player.name}
                 </div>
                 <div className={`text-xl font-bold ${
                   player.chipDelta > 0 ? 'text-primary' : 
                   player.chipDelta < 0 ? 'text-destructive' : 
-                  'text-muted-foreground'
+                  'text-foreground'
                 }`} data-testid={`total-chips-${index}`}>
                   {player.chipDelta > 0 ? '+' : ''}{player.chipDelta}
                 </div>
