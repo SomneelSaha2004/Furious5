@@ -230,6 +230,14 @@ export function GameTableView({
       <TurnTimer 
         isActive={isMyTurn && gameState.turnStage === 'start'} 
         duration={30}
+        onTimeout={() => {
+          // Auto-drop a random single card when timer runs out
+          if (currentPlayer && currentPlayer.hand.length > 0) {
+            const randomIndex = Math.floor(Math.random() * currentPlayer.hand.length);
+            const randomCard = currentPlayer.hand[randomIndex];
+            onDropCards([randomCard], 'single');
+          }
+        }}
       />
 
     </div>
