@@ -117,13 +117,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clearTimeout(socket.disconnectTimer);
     }
     
-    // Set a 15-second grace period before marking as disconnected
+    // Set a 1-minute grace period before marking as disconnected
     socket.disconnectTimer = setTimeout(async () => {
       if (socket.roomCode && socket.playerId) {
         console.log(`Player ${socket.playerId} marked as disconnected after grace period`);
         await updatePlayerConnection(socket.roomCode, socket.playerId, false);
       }
-    }, 15000); // 15 second grace period
+    }, 60000); // 60 second grace period
   }
 
   function cancelDisconnect(socket: ExtendedWebSocket): void {
@@ -358,9 +358,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             try {
+              const player = gameState.players.find(p => p.id === socket.playerId);
               const updatedState = drawFromDeck(gameState, socket.playerId);
               checkInvariants(updatedState);
               await storage.updateRoom(socket.roomCode, updatedState);
+              
+              // Send notification to all players
+              broadcastToRoom(socket.roomCode, {
+                type: 'notification',
+                data: {
+                  message: `${player?.name || 'Player'} drew from deck`,
+                  type: 'info'
+                }
+              });
               
               broadcastToRoom(socket.roomCode, {
                 type: 'state:update',
@@ -389,9 +399,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             try {
+              const player = gameState.players.find(p => p.id === socket.playerId);
+              const cardTaken = gameState.tableDrop?.cards[parsed.cardIndex];
+              
               const updatedState = drawFromTable(gameState, socket.playerId, parsed.cardIndex);
               checkInvariants(updatedState);
               await storage.updateRoom(socket.roomCode, updatedState);
+              
+              // Send notification to all players with card details
+              if (cardTaken) {
+                const cardName = cardTaken.r === 1 ? 'A' : 
+                                cardTaken.r === 11 ? 'J' : 
+                                cardTaken.r === 12 ? 'Q' : 
+                                cardTaken.r === 13 ? 'K' : 
+                                cardTaken.r.toString();
+                const suit = cardTaken.s === 'H' ? '♥' : 
+                            cardTaken.s === 'D' ? '♦' : 
+                            cardTaken.s === 'C' ? '♣' : '♠';
+                
+                broadcastToRoom(socket.roomCode, {
+                  type: 'notification',
+                  data: {
+                    message: `${player?.name || 'Player'} drew ${cardName}${suit} from pile`,
+                    type: 'info'
+                  }
+                });
+              }
               
               broadcastToRoom(socket.roomCode, {
                 type: 'state:update',

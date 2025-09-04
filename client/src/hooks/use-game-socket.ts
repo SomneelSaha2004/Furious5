@@ -77,6 +77,13 @@ export function useGameSocket(): UseGameSocketReturn {
       console.log('Received state update:', data);
       setGameState(data);
     });
+
+    gameSocket.on('notification', (data) => {
+      toast({
+        description: data.message,
+        duration: 3000,
+      });
+    });
     
     gameSocket.on('error', (data) => {
       toast({
@@ -98,6 +105,7 @@ export function useGameSocket(): UseGameSocketReturn {
       gameSocket.off('room:created');
       gameSocket.off('room:joined');
       gameSocket.off('state:update');
+      gameSocket.off('notification');
       gameSocket.off('error');
     };
   }, [toast]);
