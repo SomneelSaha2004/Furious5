@@ -12,7 +12,23 @@ export default function Home() {
   const [joinRoomCode, setJoinRoomCode] = useState('');
   const { createRoom, joinRoom, roomCode } = useGameSocket();
   
-  // Don't auto-redirect, let the user manually navigate
+  // Clear any old room data when home page loads
+  useEffect(() => {
+    if (!roomCode) {
+      localStorage.removeItem('roomCode');
+      localStorage.removeItem('playerId');
+    }
+  }, [roomCode]);
+  
+  // Auto-redirect to game page when room is created
+  useEffect(() => {
+    if (roomCode) {
+      const timer = setTimeout(() => {
+        setLocation('/game');
+      }, 500); // Small delay to ensure room is fully created
+      return () => clearTimeout(timer);
+    }
+  }, [roomCode, setLocation]);
   
   const handleCreateRoom = () => {
     if (!playerName.trim()) return;
@@ -96,15 +112,11 @@ export default function Home() {
                   <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-center">
                     <div className="text-sm text-muted-foreground mb-1">Room Created:</div>
                     <div className="text-xl font-mono font-bold text-primary">{roomCode}</div>
+                    <div className="text-sm text-muted-foreground mt-2">
+                      <i className="fas fa-spinner fa-spin mr-2" />
+                      Joining lobby...
+                    </div>
                   </div>
-                  <Button
-                    className="w-full"
-                    onClick={handleGoToLobby}
-                    data-testid="button-go-to-lobby"
-                  >
-                    <i className="fas fa-arrow-right mr-2" />
-                    Go to Lobby
-                  </Button>
                 </div>
               )}
             </CardContent>

@@ -22,29 +22,14 @@ export default function Game() {
     joinRoom
   } = useGameSocket();
   
-  // Request game state when page loads and we have room info
+  // Simplified: Just show what we have or redirect home
   useEffect(() => {
-    if (roomCode && playerId && !gameState && isConnected) {
-      console.log('Page loaded with room info, requesting game state...');
-      // First try to get the state directly
-      requestGameState();
-      
-      // If that doesn't work after a delay, it means we need to rejoin
-      const timeout = setTimeout(() => {
-        if (!gameState) {
-          console.log('No game state received, attempting to rejoin room...');
-          // Get the stored player name and rejoin the room
-          const playerName = localStorage.getItem('playerName');
-          if (playerName) {
-            console.log('Rejoining room with stored name:', playerName);
-            joinRoom(roomCode, playerName);
-          }
-        }
-      }, 2000);
-      
-      return () => clearTimeout(timeout);
+    if (!roomCode && !playerId) {
+      // No room info, go home
+      const timer = setTimeout(() => setLocation('/'), 1000);
+      return () => clearTimeout(timer);
     }
-  }, [roomCode, playerId, gameState, isConnected, requestGameState]);
+  }, [roomCode, playerId, setLocation]);
   
   // Redirect to home if not in a room (with delay to allow socket to connect)
   const [shouldRedirect, setShouldRedirect] = useState(false);
