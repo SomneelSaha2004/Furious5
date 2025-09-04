@@ -119,7 +119,7 @@ export default function Game() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Theme Toggle */}
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-6 right-4 z-50">
         <ThemeToggle />
       </div>
       
