@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Card } from './card';
 import type { GameState } from '@shared/game-types';
 
 interface SettlementViewProps {
@@ -13,6 +14,12 @@ export function SettlementView({ gameState, onStartNewRound }: SettlementViewPro
   const caller = gameState.players[settlement.callerIdx];
   const callerTotal = settlement.totals[settlement.callerIdx];
   const wasSuccessful = settlement.payouts[settlement.callerIdx] > 0;
+  
+  // Find the winning player(s) - those with the lowest total
+  const lowestTotal = Math.min(...settlement.totals);
+  const winningPlayers = gameState.players.filter((_, index) => 
+    settlement.totals[index] === lowestTotal
+  );
   
   return (
     <div className="max-w-4xl mx-auto">
@@ -98,6 +105,35 @@ export function SettlementView({ gameState, onStartNewRound }: SettlementViewPro
                   'text-foreground'
                 }`} data-testid={`total-chips-${index}`}>
                   {player.chipDelta > 0 ? '+' : ''}{player.chipDelta}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Winning Hands Display */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold text-center mb-6">
+            {winningPlayers.length === 1 ? 'Winning Hand' : 'Winning Hands'}
+            <span className="text-sm font-normal text-muted-foreground ml-2">
+              ({lowestTotal} points)
+            </span>
+          </h3>
+          <div className="flex flex-wrap justify-center gap-8">
+            {winningPlayers.map((winningPlayer) => (
+              <div key={winningPlayer.id} className="text-center">
+                <div className="font-medium text-lg mb-3" data-testid={`winner-name-${winningPlayer.id}`}>
+                  {winningPlayer.name}
+                </div>
+                <div className="flex gap-2 justify-center" data-testid={`winner-hand-${winningPlayer.id}`}>
+                  {winningPlayer.hand.map((card, cardIndex) => (
+                    <Card 
+                      key={cardIndex} 
+                      card={card} 
+                      size="sm"
+                      className="transform-none shadow-md"
+                    />
+                  ))}
                 </div>
               </div>
             ))}

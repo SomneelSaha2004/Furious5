@@ -1,5 +1,6 @@
 import { Card } from './card';
 import { PlayerHand } from './player-hand';
+import { TurnTimer } from './turn-timer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { GameState, Player, Card as CardType } from '@shared/game-types';
@@ -224,6 +225,12 @@ export function GameTableView({
           />
         )}
       </div>
+      
+      {/* Turn Timer */}
+      <TurnTimer 
+        isActive={isMyTurn && gameState.turnStage === 'start'} 
+        duration={30}
+      />
 
     </div>
   );
