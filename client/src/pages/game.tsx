@@ -145,7 +145,14 @@ export default function Game() {
             
             <button 
               className="bg-secondary hover:bg-secondary/80 px-4 py-2 rounded-md text-secondary-foreground font-medium transition-colors"
-              onClick={() => setLocation('/')}
+              onClick={() => {
+                // Clear all game-related localStorage data
+                localStorage.removeItem('roomCode');
+                localStorage.removeItem('playerId');
+                localStorage.removeItem('playerName');
+                console.log('Cleared localStorage and leaving game');
+                setLocation('/');
+              }}
               data-testid="button-leave-game"
             >
               <i className="fas fa-arrow-left mr-2" />
