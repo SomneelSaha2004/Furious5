@@ -27,7 +27,7 @@ export function GameTableView({
   const currentTurnPlayer = gameState.players[gameState.turnIdx];
   
   const canDrawFromTableNow = isMyTurn && 
-    gameState.turnStage === 'dropped' && 
+    (gameState.turnStage === 'start' || gameState.turnStage === 'dropped') && 
     gameState.tableDrop;
   
   const getPlayerPosition = (playerIndex: number, totalPlayers: number) => {

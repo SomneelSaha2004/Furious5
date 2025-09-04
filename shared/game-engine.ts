@@ -299,8 +299,9 @@ export function drawFromDeck(state: GameState, playerId: string): GameState {
 }
 
 export function drawFromTable(state: GameState, playerId: string, cardIndex: number): GameState {
-  if (state.turnStage !== 'dropped') {
-    throw new Error('Must drop before drawing');
+  // Allow drawing from table at start of turn (to take from previous player) OR after dropping
+  if (state.turnStage !== 'start' && state.turnStage !== 'dropped') {
+    throw new Error('Can only draw from table at start of turn or after dropping');
   }
   
   const currentPlayer = state.players[state.turnIdx];
@@ -339,12 +340,20 @@ export function drawFromTable(state: GameState, playerId: string, cardIndex: num
     };
   }
   
-  return advanceTurn({
+  const newState = {
     ...state,
     players: newPlayers,
     tableDrop: newTableDrop,
     version: state.version + 1
-  });
+  };
+  
+  // If we drew at the start of turn, stay on same player - they still need to drop
+  // If we drew after dropping, advance to next player
+  if (state.turnStage === 'start') {
+    return newState; // Stay on same player, they still need to drop
+  } else {
+    return advanceTurn(newState); // After dropping, advance turn
+  }
 }
 
 function advanceTurn(state: GameState): GameState {
