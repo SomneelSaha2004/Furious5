@@ -186,9 +186,7 @@ export function GameTableView({
           {/* Draw from table buttons */}
           {canDrawFromTableNow && gameState.tableDrop && (
             <div className="flex space-x-2 flex-wrap gap-1">
-              {sortCardsForDisplay(gameState.tableDrop.cards, gameState.tableDrop.kind).map((card, index) => {
-                // Find original index for the action
-                const originalIndex = gameState.tableDrop!.cards.findIndex(c => c.r === card.r && c.s === card.s);
+              {gameState.tableDrop.cards.map((card, originalIndex) => {
                 const canDraw = canDrawFromTable(gameState.tableDrop, originalIndex);
                 if (!canDraw) return null;
                 

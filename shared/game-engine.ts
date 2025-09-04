@@ -71,7 +71,7 @@ export function isStraight(cards: Card[]): boolean {
   const ranks = cards.map(card => card.r).sort((a, b) => a - b);
   
   // Check for duplicates first - straights can't have duplicate ranks
-  const uniqueRanks = [...new Set(ranks)];
+  const uniqueRanks = Array.from(new Set(ranks));
   if (uniqueRanks.length !== ranks.length) {
     return false;
   }
@@ -219,7 +219,8 @@ export function startRound(state: GameState): GameState {
   for (let i = 0; i < 5; i++) {
     for (let j = 0; j < players.length; j++) {
       if (deckCopy.length > 0) {
-        players[j].hand.push(deckCopy.pop()!);
+        const drawnCard = deckCopy.pop()!;
+        players[j].hand.push(drawnCard);
       }
     }
   }
