@@ -136,7 +136,7 @@ export function canCall(state: GameState, playerId: string): boolean {
   if (currentPlayer.id !== playerId) return false;
   
   const handTotal = sumPoints(currentPlayer.hand);
-  return handTotal < 5;
+  return handTotal <= 5;
 }
 
 export function canDrawFromTable(tableDrop: TableDrop, cardIndex: number): boolean {
