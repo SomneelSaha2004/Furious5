@@ -16,6 +16,8 @@ export default function Home() {
   
   const handleCreateRoom = () => {
     if (!playerName.trim()) return;
+    // Store the player name so we can rejoin if needed
+    localStorage.setItem('playerName', playerName.trim());
     createRoom(playerName.trim());
   };
   

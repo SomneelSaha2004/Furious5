@@ -18,7 +18,8 @@ export default function Game() {
     drawFromDeck,
     drawFromTable,
     startNewRound,
-    requestGameState
+    requestGameState,
+    joinRoom
   } = useGameSocket();
   
   // Request game state when page loads and we have room info
@@ -32,7 +33,12 @@ export default function Game() {
       const timeout = setTimeout(() => {
         if (!gameState) {
           console.log('No game state received, attempting to rejoin room...');
-          // We'll need to trigger a rejoin by sending room:join with existing data
+          // Get the stored player name and rejoin the room
+          const playerName = localStorage.getItem('playerName');
+          if (playerName) {
+            console.log('Rejoining room with stored name:', playerName);
+            joinRoom(roomCode, playerName);
+          }
         }
       }, 2000);
       
