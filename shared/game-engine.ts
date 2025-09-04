@@ -417,22 +417,24 @@ export function settleOnCall(state: GameState, playerId: string): GameState {
   const payouts = new Array(state.players.length).fill(0);
   
   if (callerTotal === lowestTotal) {
-    // Check if caller is uniquely lowest
+    // Successful call - caller has lowest total (may be tied)
     const lowestPlayers = totals.map((total, idx) => ({ total, idx }))
                                 .filter(p => p.total === lowestTotal);
     
-    if (lowestPlayers.length === 1) {
-      // Successful call - caller is uniquely lowest
-      for (let i = 0; i < state.players.length; i++) {
-        if (i !== callerIdx) {
-          const payment = totals[i] - callerTotal;
-          payouts[i] = -payment;
-          payouts[callerIdx] += payment;
-        }
+    // Calculate total payout from all higher-scoring players
+    let totalPayout = 0;
+    for (let i = 0; i < state.players.length; i++) {
+      if (totals[i] > lowestTotal) {
+        const payment = totals[i] - lowestTotal;
+        payouts[i] = -payment;
+        totalPayout += payment;
       }
-    } else {
-      // Failed call - caller tied for lowest
-      handleFailedCall(state, callerIdx, totals, payouts);
+    }
+    
+    // Divide the total payout equally among all players with lowest total
+    const payoutPerWinner = totalPayout / lowestPlayers.length;
+    for (const player of lowestPlayers) {
+      payouts[player.idx] = payoutPerWinner;
     }
   } else {
     // Failed call - caller is not lowest
