@@ -383,12 +383,21 @@ function advanceTurn(state: GameState): GameState {
     newGraveyard = [...newGraveyard, ...state.tableDrop.cards];
   }
   
+  // Ensure straights are properly sorted when they become the new table drop
+  let newTableDrop = state.pendingDrop;
+  if (newTableDrop && newTableDrop.kind === 'straight') {
+    newTableDrop = {
+      ...newTableDrop,
+      cards: sortCardsForDisplay(newTableDrop.cards, 'straight')
+    };
+  }
+  
   return {
     ...state,
     turnIdx: nextTurnIdx,
     turnStage: 'start',
     graveyard: newGraveyard,
-    tableDrop: state.pendingDrop || null,
+    tableDrop: newTableDrop,
     pendingDrop: null
   };
 }
