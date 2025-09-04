@@ -155,6 +155,9 @@ export function useGameSocket(): UseGameSocketReturn {
   
   const clearRoom = useCallback(() => {
     console.log('Clearing room and player data...');
+    // Clear localStorage first, then set state to null
+    localStorage.removeItem('furious-five-room-code');
+    localStorage.removeItem('furious-five-player-id');
     setRoomCode(null);
     setPlayerId(null);
     setGameState(null);

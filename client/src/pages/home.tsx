@@ -10,15 +10,24 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [playerName, setPlayerName] = useState('');
   const [joinRoomCode, setJoinRoomCode] = useState('');
-  const { createRoom, joinRoom, roomCode } = useGameSocket();
+  const { createRoom, joinRoom, roomCode, clearRoom } = useGameSocket();
   
   // Clear any old room data when home page loads
   useEffect(() => {
     if (!roomCode) {
-      localStorage.removeItem('roomCode');
-      localStorage.removeItem('playerId');
+      localStorage.removeItem('furious-five-room-code');
+      localStorage.removeItem('furious-five-player-id');
     }
   }, [roomCode]);
+  
+  // Manual reset function for debugging
+  const handleReset = () => {
+    console.log('Manual reset triggered');
+    clearRoom();
+    localStorage.clear();
+    setPlayerName('');
+    setJoinRoomCode('');
+  };
   
   // Auto-redirect to game page when room is created
   useEffect(() => {
@@ -144,6 +153,20 @@ export default function Home() {
               Race to get your hand total below 5 points. Play combinations, 
               draw strategically, and call at the right moment to win!
             </p>
+          </div>
+          
+          {/* Reset Button - For debugging */}
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="text-xs"
+              data-testid="button-reset-app"
+            >
+              <i className="fas fa-refresh mr-1" />
+              Reset App
+            </Button>
           </div>
         </div>
         
