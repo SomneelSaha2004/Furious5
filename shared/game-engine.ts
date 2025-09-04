@@ -466,7 +466,8 @@ export function checkInvariants(state: GameState): void {
     ...state.deck,
     ...state.graveyard,
     ...state.players.flatMap(p => p.hand),
-    ...(state.tableDrop?.cards || [])
+    ...(state.tableDrop?.cards || []),
+    ...(state.pendingDrop?.cards || [])
   ];
   
   if (allCards.length !== 52) {
