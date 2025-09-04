@@ -117,13 +117,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clearTimeout(socket.disconnectTimer);
     }
     
-    // Set a 1-minute grace period before marking as disconnected
+    // Set a 2-minute grace period before marking as disconnected
     socket.disconnectTimer = setTimeout(async () => {
       if (socket.roomCode && socket.playerId) {
         console.log(`Player ${socket.playerId} marked as disconnected after grace period`);
         await updatePlayerConnection(socket.roomCode, socket.playerId, false);
       }
-    }, 60000); // 60 second grace period
+    }, 120000); // 120 second (2 minute) grace period
   }
 
   function cancelDisconnect(socket: ExtendedWebSocket): void {
@@ -472,18 +472,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           case 'game:getState': {
-            if (!socket.roomCode) {
+            // Allow getState to include roomCode and playerId for reconnections
+            const roomCode = message.data?.roomCode || socket.roomCode;
+            const playerId = message.data?.playerId || socket.playerId;
+            
+            if (!roomCode) {
               sendError(socket, 'NOT_IN_ROOM', 'Not in a room');
               break;
             }
             
-            const gameState = await storage.getRoom(socket.roomCode);
+            const gameState = await storage.getRoom(roomCode);
             if (!gameState) {
               sendError(socket, 'ROOM_NOT_FOUND', 'Room not found');
               break;
             }
             
-            console.log(`Sending current game state for room ${socket.roomCode}`);
+            // For reconnections, restore socket identity and re-add to room
+            if (playerId && !socket.playerId) {
+              // Verify this player exists in the game
+              const player = gameState.players.find(p => p.id === playerId);
+              if (player) {
+                socket.playerId = playerId;
+                socket.roomCode = roomCode;
+                socket.playerName = player.name;
+                console.log(`Restored identity for reconnected player ${player.name} (${playerId})`);
+                
+                // Mark player as connected again
+                await updatePlayerConnection(roomCode, playerId, true);
+              }
+            }
+            
+            // Re-add socket to room connections if not already there (for reconnections)
+            if (socket.roomCode) {
+              if (!roomConnections.has(socket.roomCode)) {
+                roomConnections.set(socket.roomCode, new Set());
+              }
+              const connections = roomConnections.get(socket.roomCode)!;
+              if (!connections.has(socket)) {
+                connections.add(socket);
+                console.log(`Re-added reconnected player ${socket.playerId} to room ${socket.roomCode}`);
+              }
+            }
+            
+            console.log(`Sending current game state for room ${roomCode}`);
             sendToSocket(socket, {
               type: 'state:update',
               data: gameState
@@ -506,13 +537,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('WebSocket connection closed');
       
       if (socket.roomCode && socket.playerId) {
-        // Remove from room connections
+        // Remove from room connections but don't clear room completely yet
         const connections = roomConnections.get(socket.roomCode);
         if (connections) {
           connections.delete(socket);
-          if (connections.size === 0) {
-            roomConnections.delete(socket.roomCode);
-          }
+          // Don't delete the room entry immediately - keep it for potential reconnections
+          // Room will be cleaned up by the storage cleanup process if truly inactive
         }
         
         // Start grace period instead of immediately disconnecting

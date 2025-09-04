@@ -157,7 +157,7 @@ export function useGameSocket(): UseGameSocketReturn {
   const requestGameState = useCallback(() => {
     console.log('Requesting current game state...');
     if (roomCode && playerId) {
-      gameSocket.send('game:getState');
+      gameSocket.send('game:getState', { roomCode, playerId });
     }
   }, [roomCode, playerId]);
   
