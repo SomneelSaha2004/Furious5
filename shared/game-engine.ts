@@ -153,6 +153,7 @@ export function createGame(roomCode: string, playerName: string, playerId: strin
     deck,
     graveyard: [],
     tableDrop: null,
+    pendingDrop: null,
     settlement: null,
     version: 1
   };
@@ -212,6 +213,7 @@ export function startRound(state: GameState): GameState {
     deck: deckCopy,
     graveyard: [],
     tableDrop: null,
+    pendingDrop: null,
     settlement: null,
     version: state.version + 1
   };
@@ -242,18 +244,13 @@ export function applyDrop(state: GameState, playerId: string, drop: Drop): GameS
     hand: newHand
   };
   
-  // Move previous table drop to graveyard
-  let newGraveyard = [...state.graveyard];
-  if (state.tableDrop) {
-    newGraveyard = [...newGraveyard, ...state.tableDrop.cards];
-  }
-  
+  // Keep the tableDrop as is for now - don't update it yet
+  // The dropped cards will become the new tableDrop only when the turn advances
   return {
     ...state,
     players: newPlayers,
     turnStage: 'dropped',
-    graveyard: newGraveyard,
-    tableDrop: drop,
+    pendingDrop: drop, // Store the drop temporarily
     version: state.version + 1
   };
 }
@@ -358,10 +355,20 @@ export function drawFromTable(state: GameState, playerId: string, cardIndex: num
 
 function advanceTurn(state: GameState): GameState {
   const nextTurnIdx = (state.turnIdx + 1) % state.players.length;
+  
+  // Move previous table drop to graveyard and set pending drop as new table drop
+  let newGraveyard = [...state.graveyard];
+  if (state.tableDrop) {
+    newGraveyard = [...newGraveyard, ...state.tableDrop.cards];
+  }
+  
   return {
     ...state,
     turnIdx: nextTurnIdx,
-    turnStage: 'start'
+    turnStage: 'start',
+    graveyard: newGraveyard,
+    tableDrop: state.pendingDrop || null,
+    pendingDrop: null
   };
 }
 

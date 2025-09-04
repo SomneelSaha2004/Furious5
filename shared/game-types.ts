@@ -49,6 +49,7 @@ export interface GameState {
   deck: Card[];
   graveyard: Card[];
   tableDrop: TableDrop;
+  pendingDrop?: Drop | null;
   settlement?: Settlement | null;
   version: number;
 }
