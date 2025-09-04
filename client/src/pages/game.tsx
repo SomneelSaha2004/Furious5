@@ -62,19 +62,25 @@ export default function Game() {
     );
   }
   
+  // For now, let's create a mock game state to test the UI
+  const mockGameState = gameState || {
+    roomCode: roomCode || 'FF-TEST',
+    players: [
+      { id: playerId || 'player1', name: 'You', hand: [], score: 0, isReady: false },
+    ],
+    phase: 'lobby' as const,
+    currentPlayerId: null,
+    deck: [],
+    tableCards: [],
+    lastAction: null,
+    roundNumber: 1,
+    winner: null,
+    currentPlayerIndex: 0,
+  };
+
   if (!gameState) {
     console.log('No gameState available. roomCode:', roomCode, 'playerId:', playerId);
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-primary mb-4" />
-          <p className="text-muted-foreground">Loading game...</p>
-          <p className="text-xs text-muted-foreground mt-2">
-            Room: {roomCode || 'None'} | Player: {playerId || 'None'}
-          </p>
-        </div>
-      </div>
-    );
+    console.log('Using mock state for testing...');
   }
   
   return (
@@ -122,16 +128,16 @@ export default function Game() {
       <main className="flex-1 p-4">
         <div className="max-w-7xl mx-auto h-full">
           
-          {gameState.phase === 'lobby' && (
+          {mockGameState.phase === 'lobby' && (
             <LobbyView 
-              gameState={gameState} 
+              gameState={mockGameState} 
               onStartGame={startGame} 
             />
           )}
           
-          {gameState.phase === 'playing' && (
+          {mockGameState.phase === 'playing' && (
             <GameTableView
-              gameState={gameState}
+              gameState={mockGameState}
               playerId={playerId}
               onCall={call}
               onDropCards={dropCards}
@@ -140,9 +146,9 @@ export default function Game() {
             />
           )}
           
-          {gameState.phase === 'settlement' && (
+          {mockGameState.phase === 'settlement' && (
             <SettlementView
-              gameState={gameState}
+              gameState={mockGameState}
               onStartNewRound={startNewRound}
             />
           )}
