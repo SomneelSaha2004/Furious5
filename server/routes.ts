@@ -450,6 +450,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // HTTP endpoints as backup for room operations
+  app.post('/api/rooms', async (req, res) => {
+    try {
+      const parsed = CreateRoomSchema.parse(req.body);
+      const roomCode = generateRoomCode();
+      const playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      console.log(`HTTP: Creating room ${roomCode} for player ${parsed.playerName} (${playerId})`);
+      
+      const gameState = createGame(roomCode, parsed.playerName, playerId);
+      await storage.createRoom(gameState);
+      
+      res.json({ 
+        success: true, 
+        roomCode, 
+        playerId,
+        gameState 
+      });
+      
+    } catch (error) {
+      console.error('HTTP: Error creating room:', error);
+      res.status(400).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  app.post('/api/rooms/:roomCode/join', async (req, res) => {
+    try {
+      const { roomCode } = req.params;
+      const parsed = JoinRoomSchema.parse(req.body);
+      
+      console.log(`HTTP: Player attempting to join room: ${roomCode} as ${parsed.playerName}`);
+      
+      const gameState = await storage.getRoom(roomCode);
+      
+      if (!gameState) {
+        console.log(`HTTP: Room not found: ${roomCode}`);
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Room not found' 
+        });
+      }
+      
+      if (gameState.phase !== 'lobby') {
+        console.log(`HTTP: Game already in progress in room: ${roomCode}`);
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Game already in progress' 
+        });
+      }
+      
+      // Check if player is already in this room (prevent duplicate joins)
+      if (gameState.players.some(p => p.name === parsed.playerName)) {
+        console.log(`HTTP: Player ${parsed.playerName} already in room ${roomCode}`);
+        return res.status(400).json({ 
+          success: false, 
+          error: 'A player with that name is already in the room' 
+        });
+      }
+      
+      const playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const updatedState = joinGame(gameState, parsed.playerName, playerId);
+      await storage.updateRoom(roomCode, updatedState);
+      
+      console.log(`HTTP: Player ${parsed.playerName} successfully joined room ${roomCode}`);
+      
+      // Also broadcast to WebSocket connections if any exist
+      broadcastToRoom(roomCode, {
+        type: 'state:update',
+        data: updatedState
+      });
+      
+      res.json({ 
+        success: true, 
+        playerId,
+        gameState: updatedState 
+      });
+      
+    } catch (error) {
+      console.error('HTTP: Error joining room:', error);
+      res.status(400).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  app.get('/api/rooms/:roomCode', async (req, res) => {
+    try {
+      const { roomCode } = req.params;
+      const gameState = await storage.getRoom(roomCode);
+      
+      if (!gameState) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Room not found' 
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        gameState 
+      });
+      
+    } catch (error) {
+      console.error('HTTP: Error getting room:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });

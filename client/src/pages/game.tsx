@@ -62,8 +62,37 @@ export default function Game() {
     );
   }
   
-  // For now, let's create a mock game state to test the UI
-  const mockGameState = gameState || {
+  // Try to fetch room state via HTTP if WebSocket isn't working
+  const [httpGameState, setHttpGameState] = useState<GameState | null>(null);
+  
+  useEffect(() => {
+    if (!gameState && roomCode) {
+      // Try fetching room state via HTTP
+      const fetchRoomState = async () => {
+        try {
+          console.log('Fetching room state via HTTP for room:', roomCode);
+          const response = await fetch(`/api/rooms/${roomCode}`);
+          const data = await response.json();
+          
+          if (data.success && data.gameState) {
+            console.log('Successfully fetched room state via HTTP');
+            setHttpGameState(data.gameState);
+          } else {
+            console.log('HTTP fetch failed:', data.error);
+          }
+        } catch (error) {
+          console.error('Error fetching room state via HTTP:', error);
+        }
+      };
+      
+      // Wait a bit for WebSocket, then try HTTP
+      const timer = setTimeout(fetchRoomState, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState, roomCode]);
+
+  // Use WebSocket game state if available, otherwise use HTTP state, otherwise mock state
+  const effectiveGameState = gameState || httpGameState || {
     roomCode: roomCode || 'FF-TEST',
     players: [
       { id: playerId || 'player1', name: 'You', hand: [], score: 0, isReady: false },
@@ -78,9 +107,11 @@ export default function Game() {
     currentPlayerIndex: 0,
   };
 
-  if (!gameState) {
+  if (!gameState && !httpGameState) {
     console.log('No gameState available. roomCode:', roomCode, 'playerId:', playerId);
     console.log('Using mock state for testing...');
+  } else if (!gameState && httpGameState) {
+    console.log('Using HTTP-fetched game state');
   }
   
   return (
@@ -128,16 +159,16 @@ export default function Game() {
       <main className="flex-1 p-4">
         <div className="max-w-7xl mx-auto h-full">
           
-          {mockGameState.phase === 'lobby' && (
+          {effectiveGameState.phase === 'lobby' && (
             <LobbyView 
-              gameState={mockGameState} 
+              gameState={effectiveGameState} 
               onStartGame={startGame} 
             />
           )}
           
-          {mockGameState.phase === 'playing' && (
+          {effectiveGameState.phase === 'playing' && (
             <GameTableView
-              gameState={mockGameState}
+              gameState={effectiveGameState}
               playerId={playerId}
               onCall={call}
               onDropCards={dropCards}
@@ -146,9 +177,9 @@ export default function Game() {
             />
           )}
           
-          {mockGameState.phase === 'settlement' && (
+          {effectiveGameState.phase === 'settlement' && (
             <SettlementView
-              gameState={mockGameState}
+              gameState={effectiveGameState}
               onStartNewRound={startNewRound}
             />
           )}

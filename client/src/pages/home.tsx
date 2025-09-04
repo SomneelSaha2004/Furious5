@@ -30,16 +30,89 @@ export default function Home() {
     }
   }, [roomCode, setLocation]);
   
-  const handleCreateRoom = () => {
+  const handleCreateRoom = async () => {
     if (!playerName.trim()) return;
-    // Store the player name so we can rejoin if needed
-    localStorage.setItem('playerName', playerName.trim());
-    createRoom(playerName.trim());
+    
+    const name = playerName.trim();
+    localStorage.setItem('playerName', name);
+    
+    try {
+      // Try WebSocket first
+      createRoom(name);
+      
+      // If WebSocket doesn't work within 3 seconds, try HTTP fallback
+      setTimeout(async () => {
+        if (!roomCode) {
+          console.log('WebSocket room creation failed, trying HTTP fallback...');
+          try {
+            const response = await fetch('/api/rooms', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ playerName: name }),
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+              console.log('HTTP room creation successful:', data.roomCode);
+              localStorage.setItem('roomCode', data.roomCode);
+              localStorage.setItem('playerId', data.playerId);
+              setLocation('/game');
+            } else {
+              console.error('HTTP room creation failed:', data.error);
+            }
+          } catch (error) {
+            console.error('HTTP room creation error:', error);
+          }
+        }
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Room creation error:', error);
+    }
   };
   
-  const handleJoinRoom = () => {
+  const handleJoinRoom = async () => {
     if (!playerName.trim() || !joinRoomCode.trim()) return;
-    joinRoom(joinRoomCode.trim().toUpperCase(), playerName.trim());
+    
+    const name = playerName.trim();
+    const code = joinRoomCode.trim().toUpperCase();
+    
+    try {
+      // Try WebSocket first
+      joinRoom(code, name);
+      
+      // If WebSocket doesn't work within 3 seconds, try HTTP fallback
+      setTimeout(async () => {
+        const currentRoomCode = localStorage.getItem('roomCode');
+        if (!currentRoomCode || currentRoomCode !== code) {
+          console.log('WebSocket room join failed, trying HTTP fallback...');
+          try {
+            const response = await fetch(`/api/rooms/${code}/join`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ playerName: name }),
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+              console.log('HTTP room join successful:', code);
+              localStorage.setItem('roomCode', code);
+              localStorage.setItem('playerId', data.playerId);
+              setLocation('/game');
+            } else {
+              console.error('HTTP room join failed:', data.error);
+              alert(`Failed to join room: ${data.error}`);
+            }
+          } catch (error) {
+            console.error('HTTP room join error:', error);
+            alert('Failed to join room. Please check the room code and try again.');
+          }
+        }
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Room join error:', error);
+    }
   };
   
   const handleGoToLobby = () => {
