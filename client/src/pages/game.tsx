@@ -19,7 +19,8 @@ export default function Game() {
     drawFromTable,
     startNewRound,
     requestGameState,
-    joinRoom
+    joinRoom,
+    clearRoom
   } = useGameSocket();
   
   // Simplified: Just show what we have or redirect home
@@ -146,11 +147,9 @@ export default function Game() {
             <button 
               className="bg-secondary hover:bg-secondary/80 px-4 py-2 rounded-md text-secondary-foreground font-medium transition-colors"
               onClick={() => {
-                // Clear all game-related localStorage data
-                localStorage.removeItem('roomCode');
-                localStorage.removeItem('playerId');
-                localStorage.removeItem('playerName');
-                console.log('Cleared localStorage and leaving game');
+                // Use the clearRoom function from the hook to properly clear all state
+                clearRoom();
+                console.log('Cleared room state and leaving game');
                 setLocation('/');
               }}
               data-testid="button-leave-game"

@@ -17,6 +17,7 @@ interface UseGameSocketReturn {
   drawFromTable: (cardIndex: number) => void;
   startNewRound: () => void;
   requestGameState: () => void;
+  clearRoom: () => void;
 }
 
 export function useGameSocket(): UseGameSocketReturn {
@@ -152,6 +153,13 @@ export function useGameSocket(): UseGameSocketReturn {
     }
   }, [roomCode, playerId]);
   
+  const clearRoom = useCallback(() => {
+    console.log('Clearing room and player data...');
+    setRoomCode(null);
+    setPlayerId(null);
+    setGameState(null);
+  }, []);
+  
   return {
     gameState,
     playerId,
@@ -166,5 +174,6 @@ export function useGameSocket(): UseGameSocketReturn {
     drawFromTable,
     startNewRound,
     requestGameState,
+    clearRoom,
   };
 }
