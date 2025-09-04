@@ -38,13 +38,13 @@ export function TurnTimer({ isActive, duration = 30, onTimeout }: TurnTimerProps
   
   return (
     <div className={cn(
-      "fixed bottom-4 right-4 z-50 bg-card border rounded-lg p-4 shadow-lg",
+      "fixed bottom-4 left-4 z-50 bg-card border rounded-lg p-4 shadow-lg",
       "animate-in slide-in-from-bottom-2 fade-in-0",
       isUrgent && "animate-pulse border-destructive"
     )} data-testid="turn-timer">
       <div className="text-center">
         <div className="text-sm font-medium text-muted-foreground mb-2">
-          Your Turn
+          🎯 Your Turn
         </div>
         <div className={cn(
           "text-2xl font-bold mb-2",

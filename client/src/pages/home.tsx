@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { useGameSocket } from '@/hooks/use-game-socket';
+import { Users, GamepadIcon } from 'lucide-react';
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -132,6 +134,11 @@ export default function Home() {
   
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      {/* Theme Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+      
       <div className="w-full max-w-4xl">
         
         {/* Header */}

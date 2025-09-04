@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { LobbyView } from '@/components/lobby-view';
 import { GameTableView } from '@/components/game-table-view';
 import { SettlementView } from '@/components/settlement-view';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { useGameSocket } from '@/hooks/use-game-socket';
 
 export default function Game() {
@@ -117,6 +118,10 @@ export default function Game() {
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Theme Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       
       {/* Game Header */}
       <header className="bg-card border-b border-border p-4 flex-shrink-0">
