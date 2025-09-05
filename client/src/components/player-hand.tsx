@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from './card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -21,7 +21,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
   const currentPlayer = gameState.players.find(p => p.id === playerId);
   
   // Update hand order when player's hand changes
-  useMemo(() => {
+  React.useEffect(() => {
     if (currentPlayer && currentPlayer.hand.length !== handOrder.length) {
       setHandOrder([...currentPlayer.hand]);
     }
@@ -96,6 +96,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
   };
   
   const handleDragOver = (e: React.DragEvent) => {
@@ -106,13 +107,15 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     
-    if (draggedIndex === null || draggedIndex === dropIndex) {
+    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    
+    if (isNaN(dragIndex) || dragIndex === dropIndex) {
       setDraggedIndex(null);
       return;
     }
     
     const newOrder = [...orderedHand];
-    const [draggedCard] = newOrder.splice(draggedIndex, 1);
+    const [draggedCard] = newOrder.splice(dragIndex, 1);
     newOrder.splice(dropIndex, 0, draggedCard);
     
     setHandOrder(newOrder);
@@ -126,8 +129,8 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
   const handleDropCards = () => {
     if (!validDrop || !currentPlayer) return;
     
-    if (validateDrop(currentPlayer.hand, validDrop)) {
-      onDropCards(validDrop.cards, validDrop.kind as any);
+    if (validateDrop(currentPlayer.hand, { kind: validDrop.kind as 'single' | 'pair' | 'trips' | 'quads' | 'straight', cards: validDrop.cards })) {
+      onDropCards(validDrop.cards, validDrop.kind as 'single' | 'pair' | 'trips' | 'quads' | 'straight');
       setSelectedCards(new Set());
     }
   };
@@ -172,15 +175,14 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
         {orderedHand.map((card, index) => (
           <div
             key={`${cardKey(card)}-${index}`}
-            draggable={isMyTurn}
+            draggable={true}
             onDragStart={(e) => handleDragStart(e, index)}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
             className={cn(
-              "transition-all duration-200",
-              draggedIndex === index && "opacity-50 scale-95",
-              isMyTurn && "hover:scale-105"
+              "transition-all duration-200 cursor-move",
+              "hover:scale-105"
             )}
           >
             <Card
@@ -192,7 +194,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
                 !isMyTurn || gameState.turnStage !== 'start' 
                   ? 'cursor-not-allowed opacity-75' 
                   : 'cursor-pointer',
-                isMyTurn && 'hover:shadow-lg'
+                'hover:shadow-lg'
               )}
             />
           </div>
