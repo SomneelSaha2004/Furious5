@@ -160,6 +160,7 @@ export function createGame(roomCode: string, playerName: string, playerId: strin
     id: playerId,
     name: playerName,
     connected: true,
+    ready: false,
     hand: [],
     chipDelta: 0
   };
@@ -175,7 +176,9 @@ export function createGame(roomCode: string, playerName: string, playerId: strin
     tableDrop: null,
     pendingDrop: null,
     settlement: null,
-    version: 1
+    version: 1,
+    roundNumber: 1,
+    gameStartTime: Date.now()
   };
 }
 
@@ -192,6 +195,7 @@ export function joinGame(state: GameState, playerName: string, playerId: string)
     id: playerId,
     name: playerName,
     connected: true,
+    ready: false,
     hand: [],
     chipDelta: 0
   };
@@ -203,9 +207,29 @@ export function joinGame(state: GameState, playerName: string, playerId: string)
   };
 }
 
+export function togglePlayerReady(state: GameState, playerId: string): GameState {
+  const player = state.players.find(p => p.id === playerId);
+  if (!player) {
+    throw new Error('Player not found');
+  }
+  
+  return {
+    ...state,
+    players: state.players.map(p => 
+      p.id === playerId ? { ...p, ready: !p.ready } : p
+    ),
+    version: state.version + 1
+  };
+}
+
 export function startRound(state: GameState): GameState {
   if (state.players.length < 2) {
     throw new Error('Need at least 2 players to start');
+  }
+  
+  // Check if all players are ready (only in lobby phase)
+  if (state.phase === 'lobby' && !state.players.every(p => p.ready)) {
+    throw new Error('All players must be ready before starting');
   }
   
   const deck = shuffleDeck(createDeck());
@@ -228,7 +252,7 @@ export function startRound(state: GameState): GameState {
   return {
     ...state,
     phase: 'playing',
-    players,
+    players: players.map(p => ({ ...p, ready: false })), // Reset ready status for next round
     turnIdx: 0,
     turnStage: 'start',
     deck: deckCopy,
@@ -236,7 +260,8 @@ export function startRound(state: GameState): GameState {
     tableDrop: null,
     pendingDrop: null,
     settlement: null,
-    version: state.version + 1
+    version: state.version + 1,
+    gameStartTime: state.phase === 'lobby' ? Date.now() : state.gameStartTime // Only update start time if starting from lobby
   };
 }
 

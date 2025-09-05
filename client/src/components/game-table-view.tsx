@@ -1,6 +1,7 @@
 import { Card } from './card';
 import { PlayerHand } from './player-hand';
 import { TurnTimer } from './turn-timer';
+import { RoundCounter } from './round-counter';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { GameState, Player, Card as CardType } from '@shared/game-types';
@@ -134,6 +135,14 @@ export function GameTableView({
             </div>
           </div>
         </div>
+        
+        {/* Round Counter */}
+        <RoundCounter 
+          roundNumber={gameState.roundNumber}
+          gameStartTime={gameState.gameStartTime}
+          currentPlayer={currentTurnPlayer?.name}
+          totalPlayers={gameState.players.length}
+        />
         
         <div className="bg-card/90 backdrop-blur rounded-lg px-4 py-2">
           <div className="flex items-center space-x-2">

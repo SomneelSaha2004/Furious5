@@ -1,0 +1,59 @@
+import { Clock, Hash } from "lucide-react";
+import { formatDuration, intervalToDuration } from "date-fns";
+
+interface RoundCounterProps {
+  roundNumber: number;
+  gameStartTime: number;
+  currentPlayer?: string;
+  totalPlayers: number;
+}
+
+export function RoundCounter({ 
+  roundNumber, 
+  gameStartTime, 
+  currentPlayer, 
+  totalPlayers 
+}: RoundCounterProps) {
+  const duration = intervalToDuration({
+    start: gameStartTime,
+    end: Date.now()
+  });
+
+  const formattedDuration = formatDuration(duration, {
+    format: ['minutes', 'seconds'],
+    zero: true,
+    delimiter: ':'
+  }).replace(/\D/g, ':').replace(/^:+|:+$/g, '');
+
+  return (
+    <div className="flex items-center gap-4 px-4 py-2 bg-white/50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 backdrop-blur-sm" data-testid="round-counter">
+      <div className="flex items-center gap-2">
+        <Hash className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100" data-testid="text-round-number">
+          Round {roundNumber}
+        </span>
+      </div>
+      
+      <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
+      
+      <div className="flex items-center gap-2">
+        <Clock className="h-4 w-4 text-green-600 dark:text-green-400" />
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono" data-testid="text-game-duration">
+          {formattedDuration || '0:00'}
+        </span>
+      </div>
+
+      {currentPlayer && (
+        <>
+          <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+            <span className="text-sm text-gray-700 dark:text-gray-300" data-testid="text-current-turn">
+              {currentPlayer}'s turn
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

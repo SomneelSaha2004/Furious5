@@ -20,7 +20,8 @@ import {
   drawFromDeck,
   drawFromTable,
   settleOnCall,
-  checkInvariants
+  checkInvariants,
+  togglePlayerReady
 } from "@shared/game-engine";
 
 interface ExtendedWebSocket extends WebSocket {
@@ -256,6 +257,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           }
           
+          case 'player:ready': {
+            if (!socket.roomCode || !socket.playerId) {
+              sendError(socket, 'NOT_IN_GAME', 'Not in a game');
+              break;
+            }
+            
+            const gameState = await storage.getRoom(socket.roomCode);
+            if (!gameState) {
+              sendError(socket, 'ROOM_NOT_FOUND', 'Room not found');
+              break;
+            }
+            
+            try {
+              const updatedState = togglePlayerReady(gameState, socket.playerId);
+              checkInvariants(updatedState);
+              await storage.updateRoom(socket.roomCode, updatedState);
+              
+              const player = updatedState.players.find(p => p.id === socket.playerId);
+              broadcastToRoom(socket.roomCode, {
+                type: 'notification',
+                data: {
+                  message: `${player?.name || 'Player'} is ${player?.ready ? 'ready' : 'not ready'}`,
+                  type: 'info'
+                }
+              });
+              
+              broadcastToRoom(socket.roomCode, {
+                type: 'state:update',
+                data: updatedState
+              });
+              
+            } catch (error) {
+              sendError(socket, 'READY_FAILED', (error as Error).message);
+            }
+            
+            break;
+          }
+          
           case 'game:start': {
             if (!socket.roomCode) {
               sendError(socket, 'NOT_IN_ROOM', 'Not in a room');
@@ -454,7 +493,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const updatedState = startRound({
                 ...gameState,
                 phase: 'playing',
-                settlement: null
+                settlement: null,
+                roundNumber: gameState.roundNumber + 1 // Increment round number for new rounds
               });
               checkInvariants(updatedState);
               await storage.updateRoom(socket.roomCode, updatedState);

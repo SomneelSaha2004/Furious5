@@ -13,6 +13,8 @@ export default function Game() {
     playerId, 
     roomCode, 
     isConnected,
+    connectionState,
+    toggleReady,
     startGame,
     call,
     dropCards,
@@ -173,7 +175,9 @@ export default function Game() {
           {effectiveGameState.phase === 'lobby' && (
             <LobbyView 
               gameState={effectiveGameState} 
+              playerId={playerId || ''}
               onStartGame={startGame} 
+              onToggleReady={toggleReady}
             />
           )}
           

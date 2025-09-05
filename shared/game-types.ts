@@ -25,6 +25,7 @@ export interface Player {
   id: string;
   name: string;
   connected: boolean;
+  ready: boolean;
   hand: Card[];
   chipDelta: number;
 }
@@ -52,6 +53,8 @@ export interface GameState {
   pendingDrop?: Drop | null;
   settlement?: Settlement | null;
   version: number;
+  roundNumber: number;
+  gameStartTime: number;
 }
 
 // Zod schemas for validation
@@ -69,6 +72,7 @@ export const PlayerSchema = z.object({
   id: z.string(),
   name: z.string(),
   connected: z.boolean(),
+  ready: z.boolean(),
   hand: z.array(CardSchema),
   chipDelta: z.number()
 });

@@ -4,12 +4,17 @@ import type { GameState } from '@shared/game-types';
 
 interface LobbyViewProps {
   gameState: GameState;
+  playerId: string;
   onStartGame: () => void;
+  onToggleReady: () => void;
 }
 
-export function LobbyView({ gameState, onStartGame }: LobbyViewProps) {
+export function LobbyView({ gameState, playerId, onStartGame, onToggleReady }: LobbyViewProps) {
   const { toast } = useToast();
-  const canStart = gameState.players.length >= 2;
+  const currentPlayer = gameState.players.find(p => p.id === playerId);
+  const allReady = gameState.players.length >= 2 && gameState.players.every(p => p.ready);
+  const readyCount = gameState.players.filter(p => p.ready).length;
+  const canStart = gameState.players.length >= 2 && allReady;
   
   return (
     <div className="max-w-2xl mx-auto">
@@ -18,7 +23,12 @@ export function LobbyView({ gameState, onStartGame }: LobbyViewProps) {
           <h2 className="text-3xl font-bold text-foreground mb-2" data-testid="lobby-title">
             Game Lobby
           </h2>
-          <p className="text-muted-foreground">Waiting for players to join...</p>
+          <p className="text-muted-foreground">
+            {readyCount < gameState.players.length 
+              ? `Waiting for players to ready up... (${readyCount}/${gameState.players.length})`
+              : "All players ready! Game can start."
+            }
+          </p>
         </div>
 
         {/* Players List */}
@@ -39,13 +49,29 @@ export function LobbyView({ gameState, onStartGame }: LobbyViewProps) {
                     {player.name}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    player.connected ? 'bg-primary' : 'bg-muted-foreground'
-                  }`} />
-                  <span className="text-sm text-muted-foreground">
-                    {player.connected ? 'Connected' : 'Disconnected'}
-                  </span>
+                <div className="flex items-center space-x-3">
+                  {/* Connection Status */}
+                  <div className="flex items-center space-x-1">
+                    <div className={`w-2 h-2 rounded-full ${
+                      player.connected ? 'bg-green-500' : 'bg-red-500'
+                    }`} />
+                    <span className="text-xs text-muted-foreground">
+                      {player.connected ? 'Online' : 'Offline'}
+                    </span>
+                  </div>
+                  
+                  {/* Ready Status */}
+                  <div className="flex items-center space-x-1">
+                    {player.ready ? (
+                      <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                        ✓ Ready
+                      </div>
+                    ) : (
+                      <div className="bg-muted text-muted-foreground px-2 py-1 rounded-full text-xs font-medium">
+                        Not Ready
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -93,13 +119,32 @@ export function LobbyView({ gameState, onStartGame }: LobbyViewProps) {
 
         <div className="flex space-x-4">
           <Button
+            variant={currentPlayer?.ready ? "secondary" : "default"}
+            onClick={onToggleReady}
+            data-testid="button-toggle-ready"
+            className="flex-1"
+          >
+            {currentPlayer?.ready ? (
+              <><i className="fas fa-times mr-2" />Not Ready</>
+            ) : (
+              <><i className="fas fa-check mr-2" />Ready Up</>
+            )}
+          </Button>
+          
+          <Button
             className="flex-1"
             disabled={!canStart}
             onClick={onStartGame}
             data-testid="button-start-game"
+            variant={canStart ? "default" : "secondary"}
           >
             <i className="fas fa-play mr-2" />
-            {canStart ? 'Start Game' : `Need ${2 - gameState.players.length} more players`}
+            {canStart 
+              ? 'Start Game' 
+              : gameState.players.length < 2 
+                ? `Need ${2 - gameState.players.length} more players`
+                : `Waiting for ${gameState.players.length - readyCount} players to ready up`
+            }
           </Button>
         </div>
       </div>

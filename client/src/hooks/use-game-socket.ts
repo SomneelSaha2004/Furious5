@@ -8,8 +8,10 @@ interface UseGameSocketReturn {
   playerId: string | null;
   roomCode: string | null;
   isConnected: boolean;
+  connectionState: string;
   createRoom: (playerName: string) => void;
   joinRoom: (roomCode: string, playerName: string) => void;
+  toggleReady: () => void;
   startGame: () => void;
   call: () => void;
   dropCards: (cards: any[], kind: string) => void;
@@ -29,6 +31,8 @@ export function useGameSocket(): UseGameSocketReturn {
     localStorage.getItem('furious-five-room-code')
   );
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState('disconnected');
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const { toast } = useToast();
   
   // Persist to localStorage when states change
@@ -49,6 +53,11 @@ export function useGameSocket(): UseGameSocketReturn {
       console.log('Removed roomCode from localStorage');
     }
   }, [roomCode]);
+  
+  // Update socket with current session info for reconnection
+  useEffect(() => {
+    gameSocket.setLastSession(roomCode, playerId);
+  }, [roomCode, playerId]);
   
   useEffect(() => {
     // Set up message handlers
@@ -93,9 +102,44 @@ export function useGameSocket(): UseGameSocketReturn {
       });
     });
     
+    // Connection event handlers
+    gameSocket.on('connection:lost', () => {
+      setIsReconnecting(true);
+      toast({
+        title: "Connection Lost",
+        description: "Attempting to reconnect...",
+        duration: 3000,
+      });
+    });
+    
+    gameSocket.on('connection:restored', (data) => {
+      setIsReconnecting(false);
+      toast({
+        title: "Connection Restored",
+        description: "Successfully reconnected to game",
+        duration: 3000,
+      });
+      
+      // Request current game state if we have room info
+      if (data.roomCode && data.playerId) {
+        requestGameState();
+      }
+    });
+    
+    gameSocket.on('connection:failed', () => {
+      setIsReconnecting(false);
+      toast({
+        title: "Connection Failed",
+        description: "Unable to reconnect. Please refresh the page.",
+        variant: "destructive",
+        duration: 10000,
+      });
+    });
+    
     // Monitor connection status
     const checkConnection = () => {
       setIsConnected(gameSocket.isConnected());
+      setConnectionState(gameSocket.getConnectionState());
     };
     
     const interval = setInterval(checkConnection, 1000);
@@ -107,6 +151,9 @@ export function useGameSocket(): UseGameSocketReturn {
       gameSocket.off('state:update');
       gameSocket.off('notification');
       gameSocket.off('error');
+      gameSocket.off('connection:lost');
+      gameSocket.off('connection:restored');
+      gameSocket.off('connection:failed');
     };
   }, [toast]);
   
@@ -126,6 +173,10 @@ export function useGameSocket(): UseGameSocketReturn {
   
   const joinRoom = useCallback((roomCode: string, playerName: string) => {
     gameSocket.send('room:join', { roomCode, playerName });
+  }, []);
+  
+  const toggleReady = useCallback(() => {
+    gameSocket.send('player:ready');
   }, []);
   
   const startGame = useCallback(() => {
@@ -176,8 +227,10 @@ export function useGameSocket(): UseGameSocketReturn {
     playerId,
     roomCode,
     isConnected,
+    connectionState,
     createRoom,
     joinRoom,
+    toggleReady,
     startGame,
     call,
     dropCards,
