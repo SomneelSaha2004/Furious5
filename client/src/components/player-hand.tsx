@@ -79,6 +79,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
   }, [selectedCardObjects, currentPlayer]);
   
   const handleCardClick = (card: CardType) => {
+    // Only allow card selection during player's turn for dropping cards
     if (!isMyTurn || gameState.turnStage !== 'start') return;
     
     const key = cardKey(card);
@@ -192,9 +193,8 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
               onClick={() => handleCardClick(card)}
               className={cn(
                 !isMyTurn || gameState.turnStage !== 'start' 
-                  ? 'cursor-not-allowed opacity-75' 
-                  : 'cursor-pointer',
-                'hover:shadow-lg'
+                  ? 'cursor-default' 
+                  : 'cursor-pointer hover:shadow-lg'
               )}
             />
           </div>
