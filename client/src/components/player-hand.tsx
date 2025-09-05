@@ -15,8 +15,20 @@ interface PlayerHandProps {
 
 export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFromDeck }: PlayerHandProps) {
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
+  const [handOrder, setHandOrder] = useState<CardType[]>([]);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   
   const currentPlayer = gameState.players.find(p => p.id === playerId);
+  
+  // Update hand order when player's hand changes
+  useMemo(() => {
+    if (currentPlayer && currentPlayer.hand.length !== handOrder.length) {
+      setHandOrder([...currentPlayer.hand]);
+    }
+  }, [currentPlayer?.hand, handOrder.length]);
+  
+  // Use ordered hand for display
+  const orderedHand = handOrder.length > 0 ? handOrder : currentPlayer?.hand || [];
   const isMyTurn = gameState.players[gameState.turnIdx]?.id === playerId;
   const canCallNow = canCall(gameState, playerId);
   const handTotal = currentPlayer ? sumPoints(currentPlayer.hand) : 0;
@@ -25,8 +37,8 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
   
   const selectedCardObjects = useMemo(() => {
     if (!currentPlayer) return [];
-    return currentPlayer.hand.filter(card => selectedCards.has(cardKey(card)));
-  }, [currentPlayer, selectedCards]);
+    return orderedHand.filter(card => selectedCards.has(cardKey(card)));
+  }, [orderedHand, selectedCards]);
   
   const validDrop = useMemo(() => {
     if (!currentPlayer || selectedCardObjects.length === 0) return null;
@@ -81,7 +93,37 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
     setSelectedCards(newSelected);
   };
   
-  const handleDrop = () => {
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+  
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+    
+    const newOrder = [...orderedHand];
+    const [draggedCard] = newOrder.splice(draggedIndex, 1);
+    newOrder.splice(dropIndex, 0, draggedCard);
+    
+    setHandOrder(newOrder);
+    setDraggedIndex(null);
+  };
+  
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+  
+  const handleDropCards = () => {
     if (!validDrop || !currentPlayer) return;
     
     if (validateDrop(currentPlayer.hand, validDrop)) {
@@ -127,19 +169,33 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
 
       {/* Player's cards */}
       <div className="flex space-x-3 mb-4 justify-center flex-wrap">
-        {currentPlayer.hand.map((card, index) => (
-          <Card
+        {orderedHand.map((card, index) => (
+          <div
             key={`${cardKey(card)}-${index}`}
-            card={card}
-            size="lg"
-            selected={selectedCards.has(cardKey(card))}
-            onClick={() => handleCardClick(card)}
+            draggable={isMyTurn}
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
             className={cn(
-              !isMyTurn || gameState.turnStage !== 'start' 
-                ? 'cursor-not-allowed opacity-75' 
-                : 'cursor-pointer'
+              "transition-all duration-200",
+              draggedIndex === index && "opacity-50 scale-95",
+              isMyTurn && "hover:scale-105"
             )}
-          />
+          >
+            <Card
+              card={card}
+              size="lg"
+              selected={selectedCards.has(cardKey(card))}
+              onClick={() => handleCardClick(card)}
+              className={cn(
+                !isMyTurn || gameState.turnStage !== 'start' 
+                  ? 'cursor-not-allowed opacity-75' 
+                  : 'cursor-pointer',
+                isMyTurn && 'hover:shadow-lg'
+              )}
+            />
+          </div>
         ))}
       </div>
 
@@ -159,7 +215,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
         {/* Drop combination button */}
         <Button
           disabled={!isMyTurn || gameState.turnStage !== 'start' || !validDrop}
-          onClick={handleDrop}
+          onClick={handleDropCards}
           data-testid="button-drop"
         >
           <i className="fas fa-arrow-down mr-2" />
