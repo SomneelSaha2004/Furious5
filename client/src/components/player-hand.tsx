@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from './card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -15,20 +15,8 @@ interface PlayerHandProps {
 
 export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFromDeck }: PlayerHandProps) {
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
-  const [handOrder, setHandOrder] = useState<CardType[]>([]);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   
   const currentPlayer = gameState.players.find(p => p.id === playerId);
-  
-  // Update hand order when player's hand changes
-  React.useEffect(() => {
-    if (currentPlayer && currentPlayer.hand.length !== handOrder.length) {
-      setHandOrder([...currentPlayer.hand]);
-    }
-  }, [currentPlayer?.hand, handOrder.length]);
-  
-  // Use ordered hand for display
-  const orderedHand = handOrder.length > 0 ? handOrder : currentPlayer?.hand || [];
   const isMyTurn = gameState.players[gameState.turnIdx]?.id === playerId;
   const canCallNow = canCall(gameState, playerId);
   const handTotal = currentPlayer ? sumPoints(currentPlayer.hand) : 0;
@@ -37,8 +25,8 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
   
   const selectedCardObjects = useMemo(() => {
     if (!currentPlayer) return [];
-    return orderedHand.filter(card => selectedCards.has(cardKey(card)));
-  }, [orderedHand, selectedCards]);
+    return currentPlayer.hand.filter(card => selectedCards.has(cardKey(card)));
+  }, [currentPlayer, selectedCards]);
   
   const validDrop = useMemo(() => {
     if (!currentPlayer || selectedCardObjects.length === 0) return null;
@@ -79,7 +67,6 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
   }, [selectedCardObjects, currentPlayer]);
   
   const handleCardClick = (card: CardType) => {
-    // Only allow card selection during player's turn for dropping cards
     if (!isMyTurn || gameState.turnStage !== 'start') return;
     
     const key = cardKey(card);
@@ -94,44 +81,11 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
     setSelectedCards(newSelected);
   };
   
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', index.toString());
-  };
-  
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-  
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    
-    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
-    
-    if (isNaN(dragIndex) || dragIndex === dropIndex) {
-      setDraggedIndex(null);
-      return;
-    }
-    
-    const newOrder = [...orderedHand];
-    const [draggedCard] = newOrder.splice(dragIndex, 1);
-    newOrder.splice(dropIndex, 0, draggedCard);
-    
-    setHandOrder(newOrder);
-    setDraggedIndex(null);
-  };
-  
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-  };
-  
-  const handleDropCards = () => {
+  const handleDrop = () => {
     if (!validDrop || !currentPlayer) return;
     
-    if (validateDrop(currentPlayer.hand, { kind: validDrop.kind as 'single' | 'pair' | 'trips' | 'quads' | 'straight', cards: validDrop.cards })) {
-      onDropCards(validDrop.cards, validDrop.kind as 'single' | 'pair' | 'trips' | 'quads' | 'straight');
+    if (validateDrop(currentPlayer.hand, validDrop)) {
+      onDropCards(validDrop.cards, validDrop.kind as any);
       setSelectedCards(new Set());
     }
   };
@@ -173,31 +127,19 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
 
       {/* Player's cards */}
       <div className="flex space-x-3 mb-4 justify-center flex-wrap">
-        {orderedHand.map((card, index) => (
-          <div
+        {currentPlayer.hand.map((card, index) => (
+          <Card
             key={`${cardKey(card)}-${index}`}
-            draggable={true}
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, index)}
-            onDragEnd={handleDragEnd}
+            card={card}
+            size="lg"
+            selected={selectedCards.has(cardKey(card))}
+            onClick={() => handleCardClick(card)}
             className={cn(
-              "transition-all duration-200 cursor-move",
-              "hover:scale-105"
+              !isMyTurn || gameState.turnStage !== 'start' 
+                ? 'cursor-not-allowed opacity-75' 
+                : 'cursor-pointer'
             )}
-          >
-            <Card
-              card={card}
-              size="lg"
-              selected={selectedCards.has(cardKey(card))}
-              onClick={() => handleCardClick(card)}
-              className={cn(
-                !isMyTurn || gameState.turnStage !== 'start' 
-                  ? 'cursor-default' 
-                  : 'cursor-pointer hover:shadow-lg'
-              )}
-            />
-          </div>
+          />
         ))}
       </div>
 
@@ -217,7 +159,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
         {/* Drop combination button */}
         <Button
           disabled={!isMyTurn || gameState.turnStage !== 'start' || !validDrop}
-          onClick={handleDropCards}
+          onClick={handleDrop}
           data-testid="button-drop"
         >
           <i className="fas fa-arrow-down mr-2" />
