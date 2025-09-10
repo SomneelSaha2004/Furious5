@@ -235,7 +235,7 @@ export function startRound(state: GameState): GameState {
   const deck = shuffleDeck(createDeck());
   const players = state.players.map(player => ({
     ...player,
-    hand: []
+    hand: [] as Card[]
   }));
   
   // Deal 5 cards to each player
@@ -342,9 +342,9 @@ export function drawFromDeck(state: GameState, playerId: string): GameState {
 }
 
 export function drawFromTable(state: GameState, playerId: string, cardIndex: number): GameState {
-  // Allow drawing from table at start of turn (to take from previous player) OR after dropping
-  if (state.turnStage !== 'start' && state.turnStage !== 'dropped') {
-    throw new Error('Can only draw from table at start of turn or after dropping');
+  // Only allow drawing from table after dropping cards
+  if (state.turnStage !== 'dropped') {
+    throw new Error('Can only draw from table after dropping cards');
   }
   
   const currentPlayer = state.players[state.turnIdx];
@@ -390,13 +390,8 @@ export function drawFromTable(state: GameState, playerId: string, cardIndex: num
     version: state.version + 1
   };
   
-  // If we drew at the start of turn, stay on same player - they still need to drop
-  // If we drew after dropping, advance to next player
-  if (state.turnStage === 'start') {
-    return newState; // Stay on same player, they still need to drop
-  } else {
-    return advanceTurn(newState); // After dropping, advance turn
-  }
+  // Since we can only draw after dropping, always advance to next player
+  return advanceTurn(newState);
 }
 
 function advanceTurn(state: GameState): GameState {
@@ -409,12 +404,19 @@ function advanceTurn(state: GameState): GameState {
   }
   
   // Ensure straights are properly sorted when they become the new table drop
-  let newTableDrop = state.pendingDrop;
-  if (newTableDrop && newTableDrop.kind === 'straight') {
-    newTableDrop = {
-      ...newTableDrop,
-      cards: sortCardsForDisplay(newTableDrop.cards, 'straight')
-    };
+  let newTableDrop: TableDrop = null;
+  if (state.pendingDrop) {
+    if (state.pendingDrop.kind === 'straight') {
+      newTableDrop = {
+        kind: state.pendingDrop.kind,
+        cards: sortCardsForDisplay(state.pendingDrop.cards, 'straight')
+      };
+    } else {
+      newTableDrop = {
+        kind: state.pendingDrop.kind,
+        cards: state.pendingDrop.cards
+      };
+    }
   }
   
   return {
