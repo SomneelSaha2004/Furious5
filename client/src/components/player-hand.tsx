@@ -163,7 +163,9 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
           data-testid="button-drop"
         >
           <i className="fas fa-arrow-down mr-2" />
-          {getDropButtonText()}
+          {!isMyTurn ? 'Wait for turn' : 
+           gameState.turnStage !== 'start' ? 'Turn in progress' :
+           getDropButtonText()}
         </Button>
         
         {/* Draw from deck button */}

@@ -133,6 +133,12 @@ export function GameTableView({
                 {currentTurnPlayer?.name}
               </span>
             </div>
+            <div className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
+            <div className="text-xs text-muted-foreground">
+              {gameState.turnStage === 'start' ? 'Drop cards' : 
+               gameState.turnStage === 'dropped' ? 'Draw or end turn' : 
+               'Waiting'}
+            </div>
           </div>
         </div>
         
@@ -194,28 +200,40 @@ export function GameTableView({
           )}
 
           {/* Draw from table buttons */}
-          {canDrawFromTableNow && gameState.tableDrop && (
-            <div className="flex space-x-2 flex-wrap gap-1">
-              {gameState.tableDrop.cards.map((card, originalIndex) => {
-                const canDraw = canDrawFromTable(gameState.tableDrop, originalIndex);
-                if (!canDraw) return null;
-                
-                return (
-                  <Button
-                    key={originalIndex}
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onDrawFromTable(originalIndex)}
-                    data-testid={`button-draw-table-${originalIndex}`}
-                  >
-                    Take {card.r === 1 ? 'A' : 
-                          card.r === 11 ? 'J' : 
-                          card.r === 12 ? 'Q' : 
-                          card.r === 13 ? 'K' : 
-                          card.r}{card.s === 'H' ? '♥' : card.s === 'D' ? '♦' : card.s === 'C' ? '♣' : '♠'}
-                  </Button>
-                );
-              })}
+          {gameState.tableDrop && (
+            <div className="space-y-2">
+              {canDrawFromTableNow ? (
+                <div className="flex space-x-2 flex-wrap gap-1">
+                  {gameState.tableDrop.cards.map((card, originalIndex) => {
+                    const canDraw = canDrawFromTable(gameState.tableDrop, originalIndex);
+                    if (!canDraw) return null;
+                    
+                    return (
+                      <Button
+                        key={originalIndex}
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onDrawFromTable(originalIndex)}
+                        data-testid={`button-draw-table-${originalIndex}`}
+                      >
+                        Take {card.r === 1 ? 'A' : 
+                              card.r === 11 ? 'J' : 
+                              card.r === 12 ? 'Q' : 
+                              card.r === 13 ? 'K' : 
+                              card.r}{card.s === 'H' ? '♥' : card.s === 'D' ? '♦' : card.s === 'C' ? '♣' : '♠'}
+                      </Button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground text-center opacity-75" data-testid="take-cards-hint">
+                  {!isMyTurn 
+                    ? "Wait for your turn to take cards" 
+                    : gameState.turnStage === 'start' 
+                    ? "Drop cards first, then you can take from the table"
+                    : "No cards available to take"}
+                </div>
+              )}
             </div>
           )}
         </div>

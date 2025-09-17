@@ -23,7 +23,7 @@ export function RoundCounter({
     format: ['minutes', 'seconds'],
     zero: true,
     delimiter: ':'
-  }).replace(/\D/g, ':').replace(/^:+|:+$/g, '');
+  }).replace(/\D/g, ':').replace(/^:+|:+$/g, '') || '0:00';
 
   return (
     <div className="flex items-center gap-4 px-4 py-2 bg-white/50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 backdrop-blur-sm" data-testid="round-counter">
