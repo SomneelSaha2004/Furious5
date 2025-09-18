@@ -1,5 +1,6 @@
 import { Clock, Hash } from "lucide-react";
 import { formatDuration, intervalToDuration } from "date-fns";
+import { useState, useEffect } from "react";
 
 interface RoundCounterProps {
   roundNumber: number;
@@ -14,9 +15,20 @@ export function RoundCounter({
   currentPlayer, 
   totalPlayers 
 }: RoundCounterProps) {
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Update timer every second for live duration display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const duration = intervalToDuration({
     start: gameStartTime,
-    end: Date.now()
+    end: currentTime
   });
 
   const formattedDuration = formatDuration(duration, {
