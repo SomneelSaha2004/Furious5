@@ -127,8 +127,17 @@ furious-five/
 ### Available Scripts
 
 - `npm run dev` - Start development server with hot reloading
-- `npm run build` - Build for production
-- `npm run start` - Run production server
+- `npm run build` - Produce production bundles for the client and server
+- `npm run start` - Run the bundled server (serves both API and client)
+
+## 🛳️ Deployment
+
+1. Install dependencies in a clean environment: `npm install`
+2. Copy `.env.example` to `.env` and adjust values as needed (only `PORT` is required by default)
+3. Build the client and server bundles: `npm run build`
+4. Launch the server: `npm run start`
+
+The Express server listens on the port defined by the `PORT` environment variable (defaults to `5000`) and serves the static React build alongside the WebSocket endpoint at `/ws`. Place the process behind your host's reverse proxy, forward WebSocket traffic, and point your custom domain at the host-provided load balancer. Ensure persistent storage or graceful restarts if you expect to keep rooms active across deployments—the default in-memory store is cleared on restart.
 
 ### Contributing
 
