@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Card } from './card';
 import type { GameState } from '@shared/game-types';
+import { Award, ArrowRightCircle, Coins, Crown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SettlementViewProps {
   gameState: GameState;
@@ -22,117 +24,115 @@ export function SettlementView({ gameState, onStartNewRound }: SettlementViewPro
   );
   
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-card rounded-lg shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2" data-testid="settlement-title">
-            Round Settlement
+    <div className="mx-auto flex max-w-5xl flex-col gap-8">
+      <div className="surface-soft glass-panel rounded-3xl border border-border/60 p-6 sm:p-8">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-14 w-14 rounded-full bg-primary/10 text-primary grid place-items-center">
+            <Crown className="h-6 w-6" />
+          </div>
+          <h2 className="text-3xl font-semibold" data-testid="settlement-title">
+            Round settlement
           </h2>
-          <div className="text-lg text-muted-foreground">
-            <span className="font-medium" data-testid="caller-name">{caller.name}</span> called with{' '}
-            <span className="font-bold" data-testid="caller-total">{callerTotal}</span> points
-          </div>
-          <div className="text-sm text-muted-foreground mt-1">
-            {wasSuccessful ? (
-              <span className="text-primary font-medium">✓ Successful Call!</span>
-            ) : (
-              <span className="text-destructive font-medium">✗ Failed Call</span>
-            )}
-          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground" data-testid="caller-name">{caller.name}</span>
+            {' '}called with
+            {' '}
+            <span className="font-semibold text-primary" data-testid="caller-total">{callerTotal}</span>
+            {' '}points
+          </p>
+          <p className={cn('mt-1 text-sm font-semibold', wasSuccessful ? 'text-primary' : 'text-destructive')}>
+            {wasSuccessful ? 'Successful call' : 'Call missed the mark'}
+          </p>
         </div>
 
-        {/* Settlement Results */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {gameState.players.map((player, index) => (
-            <div key={player.id} className="bg-muted rounded-lg p-6">
-              <div className="text-center">
-                <div className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center ${
-                  index === settlement.callerIdx 
-                    ? (wasSuccessful ? 'bg-primary' : 'bg-destructive')
-                    : 'bg-secondary'
-                }`}>
-                  <span className={`font-bold text-lg ${
-                    index === settlement.callerIdx 
-                      ? (wasSuccessful ? 'text-primary-foreground' : 'text-destructive-foreground')
-                      : 'text-secondary-foreground'
-                  }`}>
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {gameState.players.map((player, index) => {
+            const payout = settlement.payouts[index];
+            const isCaller = index === settlement.callerIdx;
+            const payoutTone = payout > 0 ? 'text-primary' : payout < 0 ? 'text-destructive' : 'text-muted-foreground';
+
+            return (
+              <div key={player.id} className="rounded-2xl border border-border/60 bg-muted/40 p-6 backdrop-blur">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div
+                    className={cn(
+                      'grid h-14 w-14 place-items-center rounded-full text-lg font-semibold',
+                      isCaller ? (wasSuccessful ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground') : 'bg-secondary text-secondary-foreground'
+                    )}
+                  >
                     {player.name[0]?.toUpperCase()}
-                  </span>
-                </div>
-                <div className="font-medium text-lg mb-1" data-testid={`player-name-${index}`}>
-                  {player.name}
-                  {index === settlement.callerIdx && ' (Caller)'}
-                </div>
-                <div className="text-sm text-muted-foreground mb-3">
-                  Hand: <span className="font-bold" data-testid={`player-total-${index}`}>
-                    {settlement.totals[index]}
-                  </span> points
-                </div>
-                <div className={`text-2xl font-bold ${
-                  settlement.payouts[index] > 0 ? 'text-primary' : 
-                  settlement.payouts[index] < 0 ? 'text-destructive' : 
-                  'text-muted-foreground'
-                }`} data-testid={`player-payout-${index}`}>
-                  {settlement.payouts[index] > 0 ? '+' : ''}{settlement.payouts[index]}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {index === settlement.callerIdx ? 
-                    (wasSuccessful ? 'Successful call' : 'Failed call') :
-                    settlement.payouts[index] > 0 ? 'Received payment' :
-                    settlement.payouts[index] < 0 ? 'Paid out' :
-                    'No change'
-                  }
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold" data-testid={`player-name-${index}`}>
+                      {player.name}
+                      {isCaller && <span className="text-xs text-muted-foreground"> · caller</span>}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Hand total{' '}
+                      <span className="font-semibold text-foreground" data-testid={`player-total-${index}`}>
+                        {settlement.totals[index]}
+                      </span>
+                      {' '}points
+                    </p>
+                  </div>
+                  <div className={cn('flex items-center gap-2 text-2xl font-semibold', payoutTone)} data-testid={`player-payout-${index}`}>
+                    <Coins className="h-5 w-5" />
+                    <span>{payout > 0 ? '+' : ''}{payout}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {isCaller
+                      ? wasSuccessful ? 'Call paid off' : 'Call backfired'
+                      : payout > 0
+                      ? 'Collected chips'
+                      : payout < 0
+                      ? 'Paid out'
+                      : 'No change'}
+                  </p>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Running Totals */}
-        <div className="bg-card border border-border rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold text-foreground mb-4 text-center">
-            Running Totals
+        <div className="mt-10 rounded-2xl border border-border/60 bg-card/70 p-6 backdrop-blur">
+          <h3 className="flex items-center justify-center gap-2 text-base font-semibold">
+            <Award className="h-5 w-5 text-accent" />
+            Running totals
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="mt-4 grid grid-cols-2 gap-4 text-center md:grid-cols-3 lg:grid-cols-5">
             {gameState.players.map((player, index) => (
-              <div key={player.id} className="text-center">
-                <div className="font-medium text-sm text-foreground" data-testid={`total-player-name-${index}`}>
+              <div key={player.id}>
+                <p className="text-xs font-semibold text-muted-foreground" data-testid={`total-player-name-${index}`}>
                   {player.name}
-                </div>
-                <div className={`text-xl font-bold ${
-                  player.chipDelta > 0 ? 'text-primary' : 
-                  player.chipDelta < 0 ? 'text-destructive' : 
-                  'text-foreground'
-                }`} data-testid={`total-chips-${index}`}>
+                </p>
+                <p
+                  className={cn(
+                    'text-lg font-semibold',
+                    player.chipDelta > 0 ? 'text-primary' : player.chipDelta < 0 ? 'text-destructive' : 'text-foreground'
+                  )}
+                  data-testid={`total-chips-${index}`}
+                >
                   {player.chipDelta > 0 ? '+' : ''}{player.chipDelta}
-                </div>
+                </p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Winning Hands Display */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-center mb-6">
-            {winningPlayers.length === 1 ? 'Winning Hand' : 'Winning Hands'}
-            <span className="text-sm font-normal text-muted-foreground ml-2">
-              ({lowestTotal} points)
-            </span>
+        <div className="mt-10">
+          <h3 className="mb-6 text-center text-xl font-semibold">
+            {winningPlayers.length === 1 ? 'Winning hand' : 'Winning hands'}
+            <span className="ml-2 text-sm font-normal text-muted-foreground">({lowestTotal} points)</span>
           </h3>
           <div className="flex flex-wrap justify-center gap-8">
-            {winningPlayers.map((winningPlayer) => (
+            {winningPlayers.map(winningPlayer => (
               <div key={winningPlayer.id} className="text-center">
-                <div className="font-medium text-lg mb-3" data-testid={`winner-name-${winningPlayer.id}`}>
+                <p className="mb-3 text-base font-semibold" data-testid={`winner-name-${winningPlayer.id}`}>
                   {winningPlayer.name}
-                </div>
-                <div className="flex gap-2 justify-center" data-testid={`winner-hand-${winningPlayer.id}`}>
+                </p>
+                <div className="flex justify-center gap-2" data-testid={`winner-hand-${winningPlayer.id}`}>
                   {winningPlayer.hand.map((card, cardIndex) => (
-                    <Card 
-                      key={cardIndex} 
-                      card={card} 
-                      size="sm"
-                      className="transform-none shadow-md"
-                    />
+                    <Card key={cardIndex} card={card} size="sm" className="shadow-md" />
                   ))}
                 </div>
               </div>
@@ -140,13 +140,10 @@ export function SettlementView({ gameState, onStartNewRound }: SettlementViewPro
           </div>
         </div>
 
-        <div className="flex space-x-4 justify-center">
-          <Button
-            onClick={onStartNewRound}
-            data-testid="button-new-round"
-          >
-            <i className="fas fa-play mr-2" />
-            Start New Round
+        <div className="mt-10 flex justify-center">
+          <Button onClick={onStartNewRound} data-testid="button-new-round" className="flex items-center gap-2">
+            <ArrowRightCircle className="h-5 w-5" />
+            Start new round
           </Button>
         </div>
       </div>

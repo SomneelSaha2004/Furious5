@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, Sparkles, SquareStack } from 'lucide-react';
 import { Card } from './card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { Card as CardType, Player, GameState } from '@shared/game-types';
-import { validateDrop, sumPoints, canCall } from '@shared/game-engine';
+import type { Card as CardType, GameState, Drop } from '@shared/game-types';
+import { canCall, sumPoints, validateDrop } from '@shared/game-engine';
 
 interface PlayerHandProps {
   gameState: GameState;
@@ -15,29 +17,29 @@ interface PlayerHandProps {
 
 export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFromDeck }: PlayerHandProps) {
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
-  
+
   const currentPlayer = gameState.players.find(p => p.id === playerId);
   const isMyTurn = gameState.players[gameState.turnIdx]?.id === playerId;
   const canCallNow = canCall(gameState, playerId);
   const handTotal = currentPlayer ? sumPoints(currentPlayer.hand) : 0;
-  
+
   const cardKey = (card: CardType) => `${card.r}-${card.s}`;
-  
+
   const selectedCardObjects = useMemo(() => {
     if (!currentPlayer) return [];
     return currentPlayer.hand.filter(card => selectedCards.has(cardKey(card)));
   }, [currentPlayer, selectedCards]);
-  
-  const validDrop = useMemo(() => {
+
+  const validDrop = useMemo<Drop | null>(() => {
     if (!currentPlayer || selectedCardObjects.length === 0) return null;
-    
+
     // Try different drop types
     const cards = selectedCardObjects;
-    
+
     if (cards.length === 1) {
       return { kind: 'single', cards };
     }
-    
+
     if (cards.length >= 2) {
       // Check for same rank
       const rank = cards[0].r;
@@ -46,7 +48,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
         if (cards.length === 3) return { kind: 'trips', cards };
         if (cards.length === 4) return { kind: 'quads', cards };
       }
-      
+
       // Check for straight
       if (cards.length >= 3) {
         const sortedRanks = cards.map(c => c.r).sort((a, b) => a - b);
@@ -62,37 +64,36 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
         }
       }
     }
-    
     return null;
   }, [selectedCardObjects, currentPlayer]);
-  
+
   const handleCardClick = (card: CardType) => {
     if (!isMyTurn || gameState.turnStage !== 'start') return;
-    
+
     const key = cardKey(card);
     const newSelected = new Set(selectedCards);
-    
+
     if (newSelected.has(key)) {
       newSelected.delete(key);
     } else {
       newSelected.add(key);
     }
-    
+
     setSelectedCards(newSelected);
   };
-  
+
   const handleDrop = () => {
     if (!validDrop || !currentPlayer) return;
-    
+
     if (validateDrop(currentPlayer.hand, validDrop)) {
       onDropCards(validDrop.cards, validDrop.kind);
       setSelectedCards(new Set());
     }
   };
-  
+
   const getDropButtonText = () => {
     if (!validDrop) return 'Select Cards';
-    
+
     switch (validDrop.kind) {
       case 'single': return 'Drop Single';
       case 'pair': return 'Drop Pair';
@@ -102,83 +103,121 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
       default: return 'Drop Cards';
     }
   };
-  
+
   if (!currentPlayer) return null;
-  
+
+  const cardIsInteractive = isMyTurn && gameState.turnStage === 'start';
+
   return (
-    <div className="bg-card/90 backdrop-blur rounded-lg p-6 shadow-lg">
-      <div className="text-center mb-4">
-        <div className="flex items-center justify-center space-x-4 mb-2">
-          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-primary-foreground font-bold">
-              {currentPlayer.name[0]?.toUpperCase()}
-            </span>
+    <motion.section
+      className="surface-soft glass-panel rounded-3xl p-4 sm:p-6 flex flex-col gap-6"
+      layout
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22 }}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-semibold">
+            {currentPlayer.name[0]?.toUpperCase()}
           </div>
           <div>
-            <div className="font-medium" data-testid="player-name">
+            <p className="text-base font-semibold" data-testid="player-name">
               {currentPlayer.name} (You)
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Hand total: <span className="font-bold" data-testid="hand-total">{handTotal}</span> points
-            </div>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Hand total:
+              {' '}
+              <span className="font-semibold text-foreground" data-testid="hand-total">
+                {handTotal}
+              </span>
+              {' '}points
+            </p>
           </div>
+        </div>
+        <div className="text-xs sm:text-sm text-muted-foreground">
+          {cardIsInteractive
+            ? 'Tap cards to build a drop. Swipe sideways to scan your hand.'
+            : isMyTurn
+            ? 'Complete your draw before taking more actions.'
+            : 'Waiting for other players. Your hand is locked.'}
         </div>
       </div>
 
-      {/* Player's cards */}
-      <div className="flex space-x-3 mb-4 justify-center flex-wrap">
-        {currentPlayer.hand.map((card, index) => (
-          <Card
-            key={`${cardKey(card)}-${index}`}
-            card={card}
-            size="lg"
-            selected={selectedCards.has(cardKey(card))}
-            onClick={() => handleCardClick(card)}
-            className={cn(
-              !isMyTurn || gameState.turnStage !== 'start' 
-                ? 'cursor-not-allowed opacity-75' 
-                : 'cursor-pointer'
-            )}
-          />
-        ))}
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-background to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background to-transparent" />
+        <div className="flex gap-3 overflow-x-auto pb-3 -mx-3 px-3 sm:px-4 snap-x snap-mandatory">
+          {currentPlayer.hand.map((card, index) => {
+            const key = cardKey(card);
+            const isSelected = selectedCards.has(key);
+            return (
+              <motion.div
+                key={`${key}-${index}`}
+                whileHover={{ y: cardIsInteractive ? -6 : 0 }}
+                whileTap={{ scale: cardIsInteractive ? 0.96 : 1 }}
+                animate={{ y: isSelected ? -12 : 0, scale: isSelected ? 1.02 : 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                className="snap-start"
+              >
+                <Card
+                  card={card}
+                  size="lg"
+                  selected={isSelected}
+                  onClick={() => handleCardClick(card)}
+                  className={cn(
+                    cardIsInteractive ? 'cursor-pointer' : 'cursor-not-allowed opacity-75',
+                    'rounded-2xl border-2 border-transparent hover:border-accent/70'
+                  )}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex space-x-3 justify-center flex-wrap gap-2">
-        {/* Call button */}
+      <div className="grid gap-3 sm:grid-cols-3">
         <Button
-          variant={canCallNow ? "destructive" : "secondary"}
+          variant={canCallNow ? 'destructive' : 'secondary'}
+          size="lg"
           disabled={!canCallNow || !isMyTurn}
           onClick={onCall}
           data-testid="button-call"
+          className="flex items-center justify-center gap-2 py-3"
         >
-          <i className="fas fa-exclamation-triangle mr-2" />
-          {canCallNow ? `Call (${handTotal})` : `Call (${handTotal} ≥ 5)`}
+          <AlertTriangle className="h-5 w-5" />
+          <span>{canCallNow ? `Call (${handTotal})` : `Call (${handTotal} ≥ 5)`}</span>
         </Button>
-        
-        {/* Drop combination button */}
+
         <Button
+          size="lg"
           disabled={!isMyTurn || gameState.turnStage !== 'start' || !validDrop}
           onClick={handleDrop}
           data-testid="button-drop"
+          className="flex items-center justify-center gap-2 py-3"
         >
-          <i className="fas fa-arrow-down mr-2" />
-          {!isMyTurn ? 'Wait for turn' : 
-           gameState.turnStage !== 'start' ? 'Turn in progress' :
-           getDropButtonText()}
+          <Sparkles className="h-5 w-5" />
+          <span>
+            {!isMyTurn
+              ? 'Wait for turn'
+              : gameState.turnStage !== 'start'
+              ? 'Turn in progress'
+              : getDropButtonText()}
+          </span>
         </Button>
-        
-        {/* Draw from deck button */}
+
         <Button
           variant="secondary"
+          size="lg"
           disabled={!isMyTurn || gameState.turnStage !== 'dropped'}
           onClick={onDrawFromDeck}
           data-testid="button-draw-deck"
+          className="flex items-center justify-center gap-2 py-3"
         >
-          <i className="fas fa-plus mr-2" />
-          Draw from Deck
+          <SquareStack className="h-5 w-5" />
+          <span>Draw from Deck</span>
         </Button>
       </div>
-    </div>
+    </motion.section>
   );
 }

@@ -1,6 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { GameState } from '@shared/game-types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Copy, Check, Clock, Sparkles, Play, Wifi } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface LobbyViewProps {
   gameState: GameState;
@@ -15,139 +18,155 @@ export function LobbyView({ gameState, playerId, onStartGame, onToggleReady }: L
   const allReady = gameState.players.length >= 2 && gameState.players.every(p => p.ready);
   const readyCount = gameState.players.filter(p => p.ready).length;
   const canStart = gameState.players.length >= 2 && allReady;
-  
+
+  const readyDescriptor =
+    readyCount < gameState.players.length
+      ? `Waiting for players to ready up… (${readyCount}/${gameState.players.length})`
+      : 'All players ready! Game can start.';
+
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-card rounded-lg shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2" data-testid="lobby-title">
-            Game Lobby
-          </h2>
-          <p className="text-muted-foreground">
-            {readyCount < gameState.players.length 
-              ? `Waiting for players to ready up... (${readyCount}/${gameState.players.length})`
-              : "All players ready! Game can start."
-            }
-          </p>
+    <motion.div
+      className="mx-auto flex w-full max-w-3xl flex-col gap-6"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24 }}
+    >
+      <section className="surface-soft glass-panel p-6 sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-3xl font-semibold" data-testid="lobby-title">
+              Game Lobby
+            </h2>
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              {readyDescriptor}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 rounded-full bg-primary/10 px-4 py-2 text-xs font-medium text-primary">
+            <Users className="h-4 w-4" />
+            <span>
+              {gameState.players.length}
+              {' '}
+              player{gameState.players.length === 1 ? '' : 's'} connected
+            </span>
+          </div>
         </div>
 
-        {/* Players List */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            Players ({gameState.players.length}/5)
+        <div className="mt-6 space-y-4">
+          <h3 className="heading-subtle text-muted-foreground text-xs">
+            Current table
           </h3>
           <div className="space-y-3">
-            {gameState.players.map((player, index) => (
-              <div key={player.id} className="flex items-center justify-between bg-muted p-3 rounded-md">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-primary-foreground font-bold text-sm">
-                      {player.name[0]?.toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="font-medium" data-testid={`player-name-${index}`}>
-                    {player.name}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  {/* Connection Status */}
-                  <div className="flex items-center space-x-1">
-                    <div className={`w-2 h-2 rounded-full ${
-                      player.connected ? 'bg-green-500' : 'bg-red-500'
-                    }`} />
-                    <span className="text-xs text-muted-foreground">
-                      {player.connected ? 'Online' : 'Offline'}
-                    </span>
-                  </div>
-                  
-                  {/* Ready Status */}
-                  <div className="flex items-center space-x-1">
-                    {player.ready ? (
-                      <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                        ✓ Ready
-                      </div>
-                    ) : (
-                      <div className="bg-muted text-muted-foreground px-2 py-1 rounded-full text-xs font-medium">
-                        Not Ready
-                      </div>
+            <AnimatePresence>
+              {gameState.players.map((player, index) => {
+                const isSelf = player.id === playerId;
+                const isReady = player.ready;
+                return (
+                  <motion.div
+                    key={player.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.15 }}
+                    className={cn(
+                      'flex items-center justify-between rounded-2xl border border-border/40 bg-muted/60 px-4 py-3 backdrop-blur-sm',
+                      isSelf && 'ring-2 ring-primary/70 bg-primary/10'
                     )}
-                  </div>
-                </div>
-              </div>
-            ))}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground font-semibold">
+                        {player.name[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium" data-testid={`player-name-${index}`}>
+                          {player.name}
+                          {isSelf && <span className="text-xs text-muted-foreground"> · you</span>}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Wifi className={cn('h-3 w-3', player.connected ? 'text-primary' : 'text-destructive')} />
+                          <span>{player.connected ? 'Online' : 'Offline'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={cn(
+                      'flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold',
+                      isReady ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
+                    )}>
+                      {isReady ? <Check className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
+                      <span>{isReady ? 'Ready' : 'Not Ready'}</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* Game Rules Summary */}
-        <div className="mb-8 bg-secondary p-4 rounded-md">
-          <h4 className="font-semibold text-foreground mb-2">Quick Rules</h4>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• Start with 5 cards, goal is to get hand total &lt; 5 points</li>
-            <li>• Drop combinations: pairs, trips, quads, straights (3+), or singles</li>
-            <li>• Call when your hand total is less than 5 to end the round</li>
-            <li>• Points: Ace=1, Face value 2-10, Jack=11, Queen=12, King=13</li>
-          </ul>
-        </div>
-
-        {/* Room Code Display */}
-        <div className="mb-6 text-center">
-          <h4 className="font-semibold text-foreground mb-3">Share Room Code</h4>
-          <div className="bg-primary/10 border-2 border-primary/20 rounded-lg p-4">
-            <div className="text-3xl font-mono font-bold text-primary mb-2" data-testid="room-code-display">
-              {gameState.roomCode}
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Share this code with friends so they can join your game
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                navigator.clipboard.writeText(gameState.roomCode);
-                toast({
-                  title: "Room code copied!",
-                  description: "Share this code with friends to join your game",
-                });
-              }}
-              data-testid="button-copy-code"
-              className="w-full"
-            >
-              <i className="fas fa-copy mr-2" />
-              Copy Room Code
-            </Button>
+        <div className="mt-8 rounded-3xl border border-primary/25 bg-primary/10 p-6 text-center">
+          <div className="text-2xl font-mono font-semibold text-primary mb-1" data-testid="room-code-display">
+            {gameState.roomCode}
           </div>
-        </div>
-
-        <div className="flex space-x-4">
+          <p className="text-sm text-muted-foreground">
+            Share this code with friends so they can join your room.
+          </p>
           <Button
-            variant={currentPlayer?.ready ? "secondary" : "default"}
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(gameState.roomCode);
+              toast({
+                title: 'Room code copied!',
+                description: 'Send this to your friends to get the table started.',
+              });
+            }}
+            data-testid="button-copy-code"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2"
+          >
+            <Copy className="h-4 w-4" />
+            Copy room code
+          </Button>
+        </div>
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <Button
+            variant={currentPlayer?.ready ? 'secondary' : 'default'}
             onClick={onToggleReady}
             data-testid="button-toggle-ready"
-            className="flex-1"
+            className="flex items-center justify-center gap-2 py-3"
           >
-            {currentPlayer?.ready ? (
-              <><i className="fas fa-times mr-2" />Not Ready</>
-            ) : (
-              <><i className="fas fa-check mr-2" />Ready Up</>
-            )}
+            {currentPlayer?.ready ? <Users className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+            {currentPlayer?.ready ? 'Mark as not ready' : 'Ready up'}
           </Button>
-          
+
           <Button
-            className="flex-1"
+            className="flex items-center justify-center gap-2 py-3"
             disabled={!canStart}
             onClick={onStartGame}
             data-testid="button-start-game"
-            variant={canStart ? "default" : "secondary"}
+            variant={canStart ? 'default' : 'secondary'}
           >
-            <i className="fas fa-play mr-2" />
-            {canStart 
-              ? 'Start Game' 
-              : gameState.players.length < 2 
-                ? `Need ${2 - gameState.players.length} more players`
-                : `Waiting for ${gameState.players.length - readyCount} players to ready up`
-            }
+            <Play className="h-4 w-4" />
+            {canStart
+              ? 'Start game'
+              : gameState.players.length < 2
+              ? `Need ${2 - gameState.players.length} more player${gameState.players.length === 1 ? '' : 's'}`
+              : `Waiting for ${gameState.players.length - readyCount} player${gameState.players.length - readyCount === 1 ? '' : 's'} to ready up`}
           </Button>
         </div>
-      </div>
-    </div>
+
+        <div className="mt-8 rounded-2xl border border-border/50 bg-background/80 p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Sparkles className="h-4 w-4 text-accent" />
+            Quick rules
+          </div>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li>Start with five cards and aim to get below five points.</li>
+            <li>Drop singles, pairs, trips, quads, or straights (3+).</li>
+            <li>Call when your total is under five to end the round.</li>
+            <li>A=1 · 2-10 face value · J=11 · Q=12 · K=13.</li>
+          </ul>
+        </div>
+      </section>
+    </motion.div>
   );
 }

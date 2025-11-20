@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import type { GameState } from '@shared/game-types';
 import { LobbyView } from '@/components/lobby-view';
@@ -6,6 +6,15 @@ import { GameTableView } from '@/components/game-table-view';
 import { SettlementView } from '@/components/settlement-view';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useGameSocket } from '@/hooks/use-game-socket';
+import { Button } from '@/components/ui/button';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { DoorOpen, Gamepad2, Link2, Loader2, RefreshCw, ShieldQuestion, Wifi } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -23,7 +32,6 @@ export default function Game() {
     playerId, 
     roomCode, 
     isConnected,
-    connectionState,
     toggleReady,
     startGame,
     call,
@@ -32,7 +40,6 @@ export default function Game() {
     drawFromTable,
     startNewRound,
     requestGameState,
-    joinRoom,
     clearRoom,
     staleSession,
     markSessionAsStale,
@@ -69,10 +76,10 @@ export default function Game() {
   // Show loading while checking connection
   if (!roomCode || !playerId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-primary mb-4" />
-          <p className="text-muted-foreground">Connecting to game...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="space-y-3 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Connecting to game…</p>
         </div>
       </div>
     );
@@ -111,20 +118,32 @@ export default function Game() {
   }, [gameState, roomCode, markSessionAsStale]);
 
   // Use WebSocket game state if available, otherwise use HTTP state, otherwise mock state
-  const effectiveGameState = gameState || httpGameState || {
+  const fallbackGameState = useMemo<GameState>(() => ({
     roomCode: roomCode || 'FF-TEST',
+    phase: 'lobby',
     players: [
-      { id: playerId || 'player1', name: 'You', hand: [], score: 0, isReady: false },
+      {
+        id: playerId || 'player1',
+        name: 'You',
+        connected: true,
+        ready: false,
+        hand: [],
+        chipDelta: 0,
+      },
     ],
-    phase: 'lobby' as const,
-    currentPlayerId: null,
+    turnIdx: 0,
+    turnStage: 'start',
     deck: [],
-    tableCards: [],
-    lastAction: null,
+    graveyard: [],
+    tableDrop: null,
+    pendingDrop: null,
+    settlement: null,
+    version: 0,
     roundNumber: 1,
-    winner: null,
-    currentPlayerIndex: 0,
-  };
+    gameStartTime: Date.now(),
+  }), [roomCode, playerId]);
+
+  const effectiveGameState = gameState || httpGameState || fallbackGameState;
 
   if (!gameState && !httpGameState) {
     console.log('No gameState available. roomCode:', roomCode, 'playerId:', playerId);
@@ -133,8 +152,10 @@ export default function Game() {
     console.log('Using HTTP-fetched game state');
   }
   
+  const connectionLabel = isConnected ? 'Connected' : 'Disconnected';
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen bg-background">
       <AlertDialog open={staleSession} onOpenChange={() => {}}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -156,88 +177,114 @@ export default function Game() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Theme Toggle */}
-      <div className="fixed right-4 z-50" style={{ top: '124px' }}>
-        <ThemeToggle />
-      </div>
-      
-      {/* Game Header */}
-      <header className="bg-card border-b border-border p-4 flex-shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <i className="fas fa-cards text-primary text-2xl" />
-              <h1 className="text-2xl font-bold text-foreground">Furious Five</h1>
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-table">
+              <Gamepad2 className="h-6 w-6" />
             </div>
-            <div className="bg-muted px-3 py-1 rounded-md">
-              <span className="text-sm text-muted-foreground">Room:</span>
-              <span className="font-mono font-bold ml-1" data-testid="room-code">
-                {roomCode}
-              </span>
+            <div>
+              <h1 className="text-3xl font-semibold">Furious Five</h1>
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Link2 className="h-4 w-4" />
+                  <span className="font-mono font-semibold" data-testid="room-code">
+                    {roomCode}
+                  </span>
+                </span>
+                <Badge variant="outline" className="flex items-center gap-2 text-xs">
+                  <Wifi className={isConnected ? 'h-3.5 w-3.5 text-primary' : 'h-3.5 w-3.5 text-destructive'} />
+                  <span data-testid="connection-indicator">{connectionLabel}</span>
+                </Badge>
+              </div>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${
-                isConnected ? 'bg-primary' : 'bg-destructive'
-              }`} data-testid="connection-indicator" />
-              <span className="text-sm text-muted-foreground">
-                {isConnected ? 'Connected' : 'Disconnected'}
-              </span>
-            </div>
-            
-            <button 
-              className="bg-secondary hover:bg-secondary/80 px-4 py-2 rounded-md text-secondary-foreground font-medium transition-colors"
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => {
-                // Use the clearRoom function from the hook to properly clear all state
                 clearRoom();
-                console.log('Cleared room state and leaving game');
                 setLocation('/');
               }}
               data-testid="button-leave-game"
+              className="flex items-center gap-2"
             >
-              <i className="fas fa-arrow-left mr-2" />
-              Leave Game
-            </button>
+              <DoorOpen className="h-4 w-4" />
+              Leave game
+            </Button>
+            <ThemeToggle />
           </div>
-        </div>
-      </header>
-      
-      {/* Main Game Area */}
-      <main className="flex-1 p-4">
-        <div className="max-w-7xl mx-auto h-full">
-          
-          {effectiveGameState.phase === 'lobby' && (
-            <LobbyView 
-              gameState={effectiveGameState} 
-              playerId={playerId || ''}
-              onStartGame={startGame} 
-              onToggleReady={toggleReady}
-            />
-          )}
-          
-          {effectiveGameState.phase === 'playing' && (
-            <GameTableView
-              gameState={effectiveGameState}
-              playerId={playerId}
-              onCall={call}
-              onDropCards={dropCards}
-              onDrawFromDeck={drawFromDeck}
-              onDrawFromTable={drawFromTable}
-            />
-          )}
-          
-          {effectiveGameState.phase === 'settlement' && (
-            <SettlementView
-              gameState={effectiveGameState}
-              onStartNewRound={startNewRound}
-            />
-          )}
-          
-        </div>
-      </main>
-      
+        </header>
+
+        <main className="flex flex-1 flex-col gap-6">
+          <div className="flex-1">
+            {effectiveGameState.phase === 'lobby' && (
+              <LobbyView
+                gameState={effectiveGameState}
+                playerId={playerId || ''}
+                onStartGame={startGame}
+                onToggleReady={toggleReady}
+              />
+            )}
+
+            {effectiveGameState.phase === 'playing' && (
+              <GameTableView
+                gameState={effectiveGameState}
+                playerId={playerId}
+                onCall={call}
+                onDropCards={dropCards}
+                onDrawFromDeck={drawFromDeck}
+                onDrawFromTable={drawFromTable}
+              />
+            )}
+
+            {effectiveGameState.phase === 'settlement' && (
+              <SettlementView
+                gameState={effectiveGameState}
+                onStartNewRound={startNewRound}
+              />
+            )}
+          </div>
+
+          <Accordion type="single" collapsible>
+            <AccordionItem value="debug">
+              <AccordionTrigger className="text-sm font-semibold text-muted-foreground">
+                Debug utilities
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3 text-sm text-muted-foreground">
+                <p className="flex items-center gap-2">
+                  <ShieldQuestion className="h-4 w-4" />
+                  If things look out of sync, use these helpers.
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => requestGameState?.()}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Request latest state
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => {
+                      clearRoom();
+                      setLocation('/');
+                    }}
+                  >
+                    <DoorOpen className="h-4 w-4" />
+                    Force leave & reset
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </main>
+      </div>
     </div>
   );
 }

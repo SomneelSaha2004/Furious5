@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Timer as TimerIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TurnTimerProps {
@@ -9,17 +11,17 @@ interface TurnTimerProps {
 
 export function TurnTimer({ isActive, duration = 30, onTimeout }: TurnTimerProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
-  
+
   useEffect(() => {
     if (!isActive) {
       setTimeLeft(duration);
       return;
     }
-    
+
     setTimeLeft(duration);
-    
+
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
+      setTimeLeft(prev => {
         if (prev <= 1) {
           onTimeout?.();
           return 0;
@@ -27,45 +29,83 @@ export function TurnTimer({ isActive, duration = 30, onTimeout }: TurnTimerProps
         return prev - 1;
       });
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, [isActive, duration, onTimeout]);
-  
-  if (!isActive) return null;
-  
-  const progress = (timeLeft / duration) * 100;
-  const isUrgent = timeLeft <= 10;
-  
+
+  const urgency = timeLeft <= Math.max(5, duration * 0.25);
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+  const offset = useMemo(
+    () => ((duration - timeLeft) / duration) * circumference,
+    [circumference, duration, timeLeft]
+  );
+
   return (
-    <div className={cn(
-      "fixed bottom-4 left-4 z-50 bg-card border rounded-lg p-4 shadow-lg",
-      "animate-in slide-in-from-bottom-2 fade-in-0",
-      isUrgent && "animate-pulse border-destructive"
-    )} data-testid="turn-timer">
-      <div className="text-center">
-        <div className="text-sm font-medium text-muted-foreground mb-2">
-          🎯 Your Turn
-        </div>
-        <div className={cn(
-          "text-2xl font-bold mb-2",
-          isUrgent ? "text-destructive" : "text-foreground"
-        )} data-testid="timer-seconds">
-          {timeLeft}
-        </div>
-        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-          <div 
+    <AnimatePresence>
+      {isActive && (
+        <motion.div
+          key="turn-timer"
+          data-testid="turn-timer"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 24 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+          className={cn(
+            'fixed bottom-4 left-4 z-50 flex items-center gap-3 rounded-2xl border border-border/70 bg-card/95 px-4 py-3 shadow-lg backdrop-blur',
+            urgency && 'border-destructive/60'
+          )}
+        >
+          <motion.div
             className={cn(
-              "h-full transition-all duration-1000 ease-linear rounded-full",
-              isUrgent ? "bg-destructive" : "bg-primary"
+              'grid place-items-center rounded-full border-2 p-2',
+              urgency ? 'border-destructive/70 bg-destructive/10' : 'border-primary/60 bg-primary/10'
             )}
-            style={{ width: `${progress}%` }}
-            data-testid="timer-progress"
-          />
-        </div>
-        <div className="text-xs text-muted-foreground mt-1">
-          seconds left
-        </div>
-      </div>
-    </div>
+            animate={{ scale: urgency ? [1, 1.05, 1] : 1 }}
+            transition={{ repeat: urgency ? Infinity : 0, duration: 1.2 }}
+          >
+            <svg width="88" height="88" viewBox="0 0 88 88" className="text-muted-foreground">
+              <circle
+                cx="44"
+                cy="44"
+                r={radius}
+                stroke="var(--muted)"
+                strokeWidth="6"
+                fill="transparent"
+              />
+              <motion.circle
+                cx="44"
+                cy="44"
+                r={radius}
+                stroke={urgency ? 'var(--destructive)' : 'var(--primary)'}
+                strokeWidth="6"
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={offset}
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="absolute text-xl font-bold" data-testid="timer-seconds">
+              {timeLeft}
+            </span>
+          </motion.div>
+
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <TimerIcon className={cn('h-4 w-4', urgency ? 'text-destructive' : 'text-primary')} />
+              <span className={urgency ? 'text-destructive' : 'text-foreground'}>Your turn</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {urgency ? 'Make a play before time runs out.' : 'Drop a combo or draw to continue.'}
+            </p>
+            <div
+              data-testid="timer-progress"
+              className="sr-only"
+              style={{ width: `${(timeLeft / duration) * 100}%` }}
+            />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
