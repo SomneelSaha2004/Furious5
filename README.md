@@ -1,6 +1,6 @@
 # Furious Five 🃏
 
-A real-time multiplayer card game built with TypeScript, React, and Socket.IO. Race to get your hand total under 5 points and call the game to win!
+A real-time multiplayer card game built with TypeScript, React, and Socket.IO. Race to get your hand total under five points, call at the perfect moment, and enjoy a newly refreshed felt-table experience tuned for phones, tablets, and desktops.
 
 ## 🎮 Game Overview
 
@@ -16,8 +16,11 @@ Furious Five is a fast-paced card game for 2-5 players where strategy meets quic
 - Players take turns in sequence
 
 **Turn Actions:**
-1. **Draw** a card from the deck OR pick up from the graveyard
-2. **Drop** cards using these combinations:
+1. **Drop** a valid combination (or a single card) to clear points from your hand
+2. **Draw** from the deck or available table drops to refill after playing a combo
+3. **Call** once your hand total is ≤ 5 to trigger the final showdown
+
+**Valid Drops:**
    - **Single:** Any individual card
    - **Pair:** Two cards of the same rank
    - **Trips:** Three cards of the same rank  
@@ -31,10 +34,21 @@ Furious Five is a fast-paced card game for 2-5 players where strategy meets quic
 - Tied lowest scores split the winnings
 
 **Special Features:**
-- 30-second turn timer with auto-play if time expires
-- Real-time multiplayer with instant updates
-- Dark/light theme support
-- Automatic game state management
+- 30-second animated turn timer with auto-drop safety net
+- Mobile-first table shell with swipe-friendly hand slider
+- Framer Motion micro-interactions and tactile feedback
+- Light/dark theme support with cohesive casino-inspired tokens
+- Automatic game state management and reconnection handling
+
+## ✨ What’s New in the Latest Polish Pass
+
+- **Unified design tokens:** refreshed color system, typography ramp, and felt/chip utilities (`client/src/index.css` + `theme-provider`).
+- **Responsive table shell:** grid-based layout that adapts to tablet/phone, with clear turn markers and Lucide icons.
+- **Swipe-friendly player hand:** gesture-ready slider with large touch targets and combo detection.
+- **Modern lobby & shells:** mobile headers, stacked panels, and accordion-powered debug tooling.
+- **Motion cues everywhere:** countdown ring, card drops, and lobby transitions powered by Framer Motion.
+
+Screenshots and short clips live in `attached_assets/` to guide future styling tweaks.
 
 ## 🚀 Quick Start
 
@@ -70,6 +84,8 @@ Furious Five is a fast-paced card game for 2-5 players where strategy meets quic
 ### Frontend
 - **React 18** with TypeScript for type safety
 - **Tailwind CSS** + **shadcn/ui** for modern, accessible UI components
+- **Custom design tokens** for brand colors, felt surfaces, and chip accents
+- **Framer Motion** for micro-interactions and animated system feedback
 - **Wouter** for lightweight client-side routing
 - **Socket.IO Client** for real-time game communication
 
@@ -84,6 +100,14 @@ Furious Five is a fast-paced card game for 2-5 players where strategy meets quic
 - Deterministic state transitions for reliable multiplayer experience
 - Room-based sessions supporting 2-5 concurrent players
 - Automatic cleanup of inactive games
+- Shared schema + Zod validation to keep client/server aligned
+
+### Design System
+
+- Theme tokens are defined in `client/src/index.css` and hydrated via `client/src/components/theme-provider.tsx`.
+- Felt/table utilities (`felt-surface`, `chip-stack`, `glass-panel`) create casino-inspired surfaces out of the box.
+- Typography ramps use `Inter` + `Poppins` with heading/body weights mapped to CSS variables.
+- Adjusting brand colors or motion curves in the token set immediately ripples through every surface.
 
 ## 📁 Project Structure
 
@@ -106,13 +130,22 @@ furious-five/
 
 ## 🎯 Key Features
 
-- **Real-time Multiplayer:** Instant game state synchronization across all players
-- **Smart Timer System:** 30-second turns with automatic timeout handling
-- **Flexible Card Combinations:** Multiple ways to play cards strategically  
-- **Room-based Games:** Private lobbies with unique room codes
-- **Responsive Design:** Works seamlessly on desktop and mobile devices
-- **Theme Support:** Beautiful dark and light mode options
-- **Automatic Reconnection:** Handles network interruptions gracefully
+- **Real-time Multiplayer:** Instant state sync with optimistic UI cues
+- **Smart Timer System:** Animated 30-second countdown with auto-drop fallback
+- **Flexible Card Combos:** Singles, multiples, straights, and table draws
+- **Polished Tabletop Feel:** Felt textures, chip stacks, and iconography
+- **Responsive & Accessible:** Touch-optimized controls, keyboard support, high-contrast themes
+- **Automatic Reconnection:** Recovers socket sessions and falls back to HTTP snapshots
+
+## 📱 Manual QA Checklist
+
+Run through these touchpoints after UI tweaks:
+
+1. **Phone (≤ 430px):** confirm hand slider swipes, table drop actions, and lobby stacking.
+2. **Tablet (768-1024px):** ensure side rails align, timers float correctly, and overlays scale.
+3. **Desktop (≥ 1280px):** verify felt surface layout, turn indicators, and motion timing.
+4. **Theme flip:** toggle light/dark to check chip, felt, and typography contrast.
+5. **Latency simulation:** drop combos and watch timer animations for jitter.
 
 ## 🎲 Game Strategy Tips
 
@@ -129,6 +162,8 @@ furious-five/
 - `npm run dev` - Start development server with hot reloading
 - `npm run build` - Produce production bundles for the client and server
 - `npm run start` - Run the bundled server (serves both API and client)
+
+For design-token or motion tweaks, use `npm run dev` so Vite and the Express proxy hot-reload both the React client and socket server.
 
 ## 🛳️ Deployment
 
