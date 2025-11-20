@@ -1,10 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import type { GameState } from '@shared/game-types';
 import { LobbyView } from '@/components/lobby-view';
 import { GameTableView } from '@/components/game-table-view';
 import { SettlementView } from '@/components/settlement-view';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useGameSocket } from '@/hooks/use-game-socket';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 
 export default function Game() {
   const [, setLocation] = useLocation();
@@ -23,7 +33,9 @@ export default function Game() {
     startNewRound,
     requestGameState,
     joinRoom,
-    clearRoom
+    clearRoom,
+    staleSession,
+    markSessionAsStale,
   } = useGameSocket();
   
   // Simplified: Just show what we have or redirect home
@@ -83,6 +95,9 @@ export default function Game() {
             setHttpGameState(data.gameState);
           } else {
             console.log('HTTP fetch failed:', data.error);
+            if (response.status === 404 || data.error === 'Room not found') {
+              markSessionAsStale();
+            }
           }
         } catch (error) {
           console.error('Error fetching room state via HTTP:', error);
@@ -93,7 +108,7 @@ export default function Game() {
       const timer = setTimeout(fetchRoomState, 2000);
       return () => clearTimeout(timer);
     }
-  }, [gameState, roomCode]);
+  }, [gameState, roomCode, markSessionAsStale]);
 
   // Use WebSocket game state if available, otherwise use HTTP state, otherwise mock state
   const effectiveGameState = gameState || httpGameState || {
@@ -120,6 +135,27 @@ export default function Game() {
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <AlertDialog open={staleSession} onOpenChange={() => {}}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Session inactive</AlertDialogTitle>
+            <AlertDialogDescription>
+              This game session is no longer active. To go back to /main leave this game.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                clearRoom();
+                setLocation('/');
+              }}
+            >
+              Leave Game
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Theme Toggle */}
       <div className="fixed right-4 z-50" style={{ top: '124px' }}>
         <ThemeToggle />

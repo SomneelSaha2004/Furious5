@@ -9,6 +9,7 @@ interface UseGameSocketReturn {
   roomCode: string | null;
   isConnected: boolean;
   connectionState: string;
+  staleSession: boolean;
   createRoom: (playerName: string) => void;
   joinRoom: (roomCode: string, playerName: string) => void;
   toggleReady: () => void;
@@ -20,6 +21,7 @@ interface UseGameSocketReturn {
   startNewRound: () => void;
   requestGameState: () => void;
   clearRoom: () => void;
+  markSessionAsStale: () => void;
 }
 
 export function useGameSocket(): UseGameSocketReturn {
@@ -33,6 +35,7 @@ export function useGameSocket(): UseGameSocketReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionState, setConnectionState] = useState('disconnected');
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [staleSession, setStaleSession] = useState(false);
   const { toast } = useToast();
   
   // Persist to localStorage when states change
@@ -66,6 +69,7 @@ export function useGameSocket(): UseGameSocketReturn {
       console.log('Setting roomCode to:', data.roomCode);
       setRoomCode(data.roomCode);
       setPlayerId(data.playerId);
+      setStaleSession(false);
       toast({
         title: "Room Created",
         description: `Room code: ${data.roomCode}. Click "Go to Lobby" to join.`,
@@ -76,6 +80,7 @@ export function useGameSocket(): UseGameSocketReturn {
     gameSocket.on('room:joined', (data) => {
       setRoomCode(data.roomCode);
       setPlayerId(data.playerId);
+      setStaleSession(false);
       toast({
         title: "Room Joined",
         description: `Joined room: ${data.roomCode}`,
@@ -85,6 +90,7 @@ export function useGameSocket(): UseGameSocketReturn {
     gameSocket.on('state:update', (data: GameState) => {
       console.log('Received state update:', data);
       setGameState(data);
+      setStaleSession(false);
     });
 
     gameSocket.on('notification', (data) => {
@@ -100,6 +106,11 @@ export function useGameSocket(): UseGameSocketReturn {
         description: data.message,
         variant: "destructive",
       });
+
+      const code = typeof data === 'object' ? data.code : undefined;
+      if (code === 'ROOM_NOT_FOUND' || code === 'NOT_IN_ROOM') {
+        setStaleSession(true);
+      }
     });
     
     // Connection event handlers
@@ -220,6 +231,11 @@ export function useGameSocket(): UseGameSocketReturn {
     setRoomCode(null);
     setPlayerId(null);
     setGameState(null);
+    setStaleSession(false);
+  }, []);
+
+  const markSessionAsStale = useCallback(() => {
+    setStaleSession(true);
   }, []);
   
   return {
@@ -228,6 +244,7 @@ export function useGameSocket(): UseGameSocketReturn {
     roomCode,
     isConnected,
     connectionState,
+    staleSession,
     createRoom,
     joinRoom,
     toggleReady,
@@ -239,5 +256,6 @@ export function useGameSocket(): UseGameSocketReturn {
     startNewRound,
     requestGameState,
     clearRoom,
+    markSessionAsStale,
   };
 }
