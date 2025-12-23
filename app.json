@@ -1,0 +1,9 @@
+{
+  "name": "furious5",
+  "version": "1.0.0",
+  "description": "Furious Five card game - production deployment",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js"
+  }
+}

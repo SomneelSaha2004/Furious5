@@ -2,6 +2,9 @@
 
 A real-time multiplayer card game built with TypeScript, React, and Socket.IO. Race to get your hand total under five points, call at the perfect moment, and enjoy a newly refreshed felt-table experience tuned for phones, tablets, and desktops.
 
+[![CI](https://github.com/SomneelSaha2004/Furious5/workflows/CI/badge.svg)](https://github.com/SomneelSaha2004/Furious5/actions)
+[![Docker](https://github.com/SomneelSaha2004/Furious5/workflows/Docker%20Build%20and%20Push/badge.svg)](https://github.com/SomneelSaha2004/Furious5/actions)
+
 ## 🎮 Game Overview
 
 Furious Five is a fast-paced card game for 2-5 players where strategy meets quick thinking. Players compete to achieve the lowest hand total while managing risk and timing their calls perfectly.
@@ -157,22 +160,159 @@ Run through these touchpoints after UI tweaks:
 
 ## 🛠️ Development
 
+### Prerequisites
+
+- Node.js 20.x or higher
+- npm or yarn
+
 ### Available Scripts
 
 - `npm run dev` - Start development server with hot reloading
-- `npm run build` - Produce production bundles for the client and server
-- `npm run start` - Run the bundled server (serves both API and client)
+- `npm run build` - Build production bundles for client and server
+- `npm run start` - Run the production server
+- `npm run check` - Run TypeScript type checking
+- `npm run deploy` - Run the automated deployment script
+- `npm run pm2:start` - Start with PM2 process manager
+- `npm run docker:build` - Build Docker image
+- `npm run docker:run` - Run Docker container
 
-For design-token or motion tweaks, use `npm run dev` so Vite and the Express proxy hot-reload both the React client and socket server.
+### Development Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/SomneelSaha2004/Furious5.git
+cd Furious5
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create environment file:
+```bash
+cp .env.example .env
+```
+
+4. Start development server:
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:5000`
+
+## 🚀 Production Deployment
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Quick Start
+
+**Option 1: Traditional Deployment**
+```bash
+npm ci --only=production
+npm run build
+npm start
+```
+
+**Option 2: Docker**
+```bash
+docker build -t furious5:latest .
+docker run -d -p 5000:5000 --env-file .env furious5:latest
+```
+
+**Option 3: Docker Compose**
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Option 4: Automated Script**
+```bash
+./deploy.sh
+```
+
+### Deployment Features
+
+✅ **Security:**
+- Helmet.js for security headers
+- CORS configuration
+- Rate limiting on API and WebSocket endpoints
+- Input validation and sanitization
+
+✅ **Performance:**
+- Response compression (gzip)
+- Static file caching
+- Efficient WebSocket connection handling
+- Horizontal scaling ready
+
+✅ **Reliability:**
+- Health check endpoint at `/health`
+- Graceful shutdown handling
+- Process management with PM2
+- Docker containerization support
+
+✅ **Monitoring:**
+- Structured logging
+- Request/response tracking
+- Error handling and reporting
+- Health status monitoring
+
+### Platform-Specific Deployment
+
+**Heroku:**
+```bash
+heroku create your-app-name
+git push heroku main
+```
+
+**Railway / Render / DigitalOcean:**
+- Build Command: `npm run build`
+- Start Command: `npm start`
+- Port: Auto-detected from `PORT` env variable
+
+**Kubernetes:**
+```bash
+kubectl apply -f k8s-deployment.yml
+```
+
+### Environment Variables
+
+Required:
+- `NODE_ENV` - Set to `production` for production deployments
+- `PORT` - Server port (default: 5000)
+
+Optional:
+- `CORS_ORIGIN` - Allowed origins for CORS (default: `*`)
+
+## 📊 Health Monitoring
+
+Check application health:
+```bash
+curl http://localhost:5000/health
+```
+
+Response:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-12-23T10:30:00.000Z",
+  "uptime": 3600.5,
+  "environment": "production"
+}
+```
 
 ## 🛳️ Deployment
 
-1. Install dependencies in a clean environment: `npm install`
-2. Copy `.env.example` to `.env` and adjust values as needed (only `PORT` is required by default)
-3. Build the client and server bundles: `npm run build`
-4. Launch the server: `npm run start`
+The Express server listens on the port defined by the `PORT` environment variable (defaults to `5000`) and serves the static React build alongside the WebSocket endpoint at `/ws`.
 
-The Express server listens on the port defined by the `PORT` environment variable (defaults to `5000`) and serves the static React build alongside the WebSocket endpoint at `/ws`. Place the process behind your host's reverse proxy, forward WebSocket traffic, and point your custom domain at the host-provided load balancer. Ensure persistent storage or graceful restarts if you expect to keep rooms active across deployments—the default in-memory store is cleared on restart.
+### Scaling Considerations
+
+The application uses in-memory storage by default. For production scaling:
+- Consider using Redis for shared session/game state
+- Implement sticky sessions for WebSocket connections
+- Use a load balancer with WebSocket support
+- Set up database for persistent storage
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed scaling strategies.
 
 ### Contributing
 

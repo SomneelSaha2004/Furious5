@@ -61,6 +61,8 @@ async function buildServer() {
     "--packages=external",
     "--tsconfig=tsconfig.json",
     "--outfile=dist/index.js",
+    "--external:./vite.js",
+    "--define:process.env.NODE_ENV=\"production\"",
   ]);
 }
 
