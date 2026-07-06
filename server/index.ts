@@ -11,16 +11,7 @@ const app = express();
 // Default to production for safety if NODE_ENV is not set
 const isProduction = process.env.NODE_ENV !== "development";
 
-// Logging utility
-function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
+import { log } from "./logger";
 
 // Security middleware
 app.disable("x-powered-by");
