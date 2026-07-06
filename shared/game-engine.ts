@@ -68,27 +68,43 @@ export function isSameRank(cards: Card[], expectedCount: number): boolean {
 export function isStraight(cards: Card[]): boolean {
   if (cards.length < 3) return false;
   
-  const ranks = cards.map(card => card.r).sort((a, b) => a - b);
-  
-  // Check for duplicates first - straights can't have duplicate ranks
-  const uniqueRanks = Array.from(new Set(ranks));
-  if (uniqueRanks.length !== ranks.length) {
-    return false;
-  }
-  
-  // Check for consecutive ranks
-  for (let i = 1; i < ranks.length; i++) {
-    if (ranks[i] !== ranks[i-1] + 1) {
-      return false;
+  const checkConsecutive = (ranks: number[]) => {
+    const sorted = [...ranks].sort((a, b) => a - b);
+    const unique = Array.from(new Set(sorted));
+    if (unique.length !== sorted.length) return false;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] !== sorted[i - 1] + 1) return false;
     }
+    return true;
+  };
+
+  const ranks = cards.map(card => card.r);
+  
+  // Try treating Ace as 1
+  if (checkConsecutive(ranks)) return true;
+  
+  // If Ace is present, try treating it as 14 (Ace-high straight)
+  if (ranks.includes(1)) {
+    const highRanks = ranks.map(r => r === 1 ? 14 : r);
+    if (checkConsecutive(highRanks)) return true;
   }
   
-  return true;
+  return false;
 }
 
 // Helper function to sort cards for display
 export function sortCardsForDisplay(cards: Card[], dropKind?: string): Card[] {
   if (dropKind === 'straight') {
+    const hasAce = cards.some(c => c.r === 1);
+    const hasHighCard = cards.some(c => c.r === 13 || c.r === 12);
+    if (hasAce && hasHighCard) {
+      // Treat Ace as 14 for sorting J-Q-K-A to put it at the end
+      return [...cards].sort((a, b) => {
+        const valA = a.r === 1 ? 14 : a.r;
+        const valB = b.r === 1 ? 14 : b.r;
+        return valA - valB;
+      });
+    }
     // Sort straights by rank for proper display
     return [...cards].sort((a, b) => a.r - b.r);
   }

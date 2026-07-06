@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Card } from './card';
 import { cn } from '@/lib/utils';
 import type { Card as CardType, GameState, Drop } from '@shared/game-types';
-import { canCall, sumPoints, validateDrop } from '@shared/game-engine';
+import { canCall, sumPoints, validateDrop, isStraight, isSameRank } from '@shared/game-engine';
 import {
   ShieldCheck,
   Hand,
@@ -45,26 +45,15 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
 
     if (cards.length >= 2) {
       // Check for same rank
-      const rank = cards[0].r;
-      if (cards.every(card => card.r === rank)) {
+      if (isSameRank(cards, cards.length)) {
         if (cards.length === 2) return { kind: 'pair', cards };
         if (cards.length === 3) return { kind: 'trips', cards };
         if (cards.length === 4) return { kind: 'quads', cards };
       }
 
       // Check for straight
-      if (cards.length >= 3) {
-        const sortedRanks = cards.map(c => c.r).sort((a, b) => a - b);
-        let isStraight = true;
-        for (let i = 1; i < sortedRanks.length; i++) {
-          if (sortedRanks[i] !== sortedRanks[i-1] + 1) {
-            isStraight = false;
-            break;
-          }
-        }
-        if (isStraight) {
-          return { kind: 'straight', cards };
-        }
+      if (cards.length >= 3 && isStraight(cards)) {
+        return { kind: 'straight', cards };
       }
     }
     return null;
