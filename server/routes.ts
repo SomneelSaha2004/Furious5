@@ -319,16 +319,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               const player = updatedState.players.find((p) => p.id === socket.playerId);
               broadcastToRoom(socket.roomCode, {
-                type: "notification",
-                data: {
+                type: "state:update",
+                data: updatedState,
+                notification: {
                   message: `${player?.name || "Player"} is ${player?.ready ? "ready" : "not ready"}`,
                   type: "info",
                 },
-              });
-
-              broadcastToRoom(socket.roomCode, {
-                type: "state:update",
-                data: updatedState,
               });
             } catch (error) {
               sendError(socket, "READY_FAILED", (error as Error).message);
@@ -437,16 +433,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
 
               broadcastToRoom(socket.roomCode, {
-                type: "notification",
-                data: {
+                type: "state:update",
+                data: updatedState,
+                notification: {
                   message: `${playerName} drew from deck`,
                   type: "info",
                 },
-              });
-
-              broadcastToRoom(socket.roomCode, {
-                type: "state:update",
-                data: updatedState,
               });
             } catch (error) {
               sendError(socket, "DRAW_FAILED", (error as Error).message);
@@ -479,19 +471,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return next;
               });
 
-              if (notification) {
-                broadcastToRoom(socket.roomCode, {
-                  type: "notification",
-                  data: {
-                    message: notification,
-                    type: "info",
-                  },
-                });
-              }
-
               broadcastToRoom(socket.roomCode, {
                 type: "state:update",
                 data: updatedState,
+                notification: notification ? {
+                  message: notification,
+                  type: "info",
+                } : undefined,
               });
             } catch (error) {
               sendError(socket, "DRAW_FAILED", (error as Error).message);

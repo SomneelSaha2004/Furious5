@@ -83,7 +83,11 @@ export class RedisStorage implements IStorage {
     }
 
     await redis.expire(key, this.ttlSeconds);
-    return GameStateSchema.parse(JSON.parse(json));
+    const parsed = JSON.parse(json);
+    if (process.env.NODE_ENV !== "production") {
+      return GameStateSchema.parse(parsed);
+    }
+    return parsed as GameState;
   }
 
   async updateRoom(roomCode: string, gameState: GameState): Promise<void> {

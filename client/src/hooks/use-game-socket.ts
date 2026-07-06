@@ -87,10 +87,16 @@ export function useGameSocket(): UseGameSocketReturn {
       });
     });
     
-    gameSocket.on('state:update', (data: GameState) => {
+    gameSocket.on('state:update', (data: GameState, message: any) => {
       console.log('Received state update:', data);
       setGameState(data);
       setStaleSession(false);
+      if (message && message.notification) {
+        toast({
+          description: message.notification.message,
+          duration: 3000,
+        });
+      }
     });
 
     gameSocket.on('notification', (data) => {

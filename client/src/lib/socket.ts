@@ -9,7 +9,7 @@ export class GameSocket {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
   private reconnectDelay = 1000;
-  private messageHandlers = new Map<string, (data: any) => void>();
+  private messageHandlers = new Map<string, (data: any, message?: any) => void>();
   private pingInterval: number | null = null;
   private lastPong = Date.now();
   private reconnectTimer: number | null = null;
@@ -71,7 +71,7 @@ export class GameSocket {
         
         const handler = this.messageHandlers.get(message.type);
         if (handler) {
-          handler(message.data);
+          handler(message.data, message);
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -168,7 +168,7 @@ export class GameSocket {
     }
   }
   
-  public on(type: string, handler: (data: any) => void): void {
+  public on(type: string, handler: (data: any, message?: any) => void): void {
     this.messageHandlers.set(type, handler);
   }
   
