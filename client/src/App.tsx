@@ -4,18 +4,21 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import React, { Suspense } from "react";
 import Home from "@/pages/home";
-import Game from "@/pages/game";
+const Game = React.lazy(() => import("@/pages/game"));
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home}/>
-      <Route path="/game" component={Game}/>
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center text-primary">Loading game...</div>}>
+      <Switch>
+        <Route path="/" component={Home}/>
+        <Route path="/game" component={Game}/>
+        {/* Fallback to 404 */}
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
