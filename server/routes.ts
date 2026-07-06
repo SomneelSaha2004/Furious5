@@ -100,16 +100,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const connections = roomConnections.get(roomCode);
     if (!connections) return;
 
+    let preSerialized: string | undefined;
+    if (message.type !== "state:update" || (message.data && message.data.phase !== "playing")) {
+      preSerialized = JSON.stringify(message);
+    }
+
     for (const socket of Array.from(connections)) {
       if (socket !== excludeSocket && socket.readyState === WebSocket.OPEN) {
-        let serializedMessage = message;
-        if (message.type === "state:update" && message.data) {
-          serializedMessage = {
+        if (preSerialized) {
+          socket.send(preSerialized);
+        } else {
+          const serializedMessage = {
             ...message,
             data: redactGameStateForPlayer(message.data, socket.playerId || ""),
           };
+          socket.send(JSON.stringify(serializedMessage));
         }
-        socket.send(JSON.stringify(serializedMessage));
         metrics.incrementMessagesSent();
       }
     }
