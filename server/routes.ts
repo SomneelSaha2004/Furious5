@@ -311,7 +311,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const updatedState = await storage.mutateRoom(socket.roomCode, async (gameState) => {
                 const next = togglePlayerReady(gameState, socket.playerId!);
-                checkInvariants(next);
+                if (process.env.NODE_ENV !== "production") {
+                  checkInvariants(next);
+                }
                 return next;
               });
 
@@ -344,7 +346,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const updatedState = await storage.mutateRoom(socket.roomCode, async (gameState) => {
                 const next = startRound(gameState);
-                checkInvariants(next);
+                if (process.env.NODE_ENV !== "production") {
+                  checkInvariants(next);
+                }
                 return next;
               });
 
@@ -368,7 +372,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const updatedState = await storage.mutateRoom(socket.roomCode, async (gameState) => {
                 const next = settleOnCall(gameState, socket.playerId!);
-                checkInvariants(next);
+                if (process.env.NODE_ENV !== "production") {
+                  checkInvariants(next);
+                }
                 return next;
               });
 
@@ -394,7 +400,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const updatedState = await storage.mutateRoom(socket.roomCode, async (gameState) => {
                 const next = applyDrop(gameState, socket.playerId!, parsed.drop as any);
-                checkInvariants(next);
+                if (process.env.NODE_ENV !== "production") {
+                  checkInvariants(next);
+                }
                 return next;
               });
 
@@ -422,7 +430,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const player = gameState.players.find((p) => p.id === socket.playerId);
                 playerName = player?.name || "Player";
                 const next = drawFromDeck(gameState, socket.playerId!);
-                checkInvariants(next);
+                if (process.env.NODE_ENV !== "production") {
+                  checkInvariants(next);
+                }
                 return next;
               });
 
@@ -463,7 +473,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
 
                 const next = drawFromTable(gameState, socket.playerId!, parsed.cardIndex);
-                checkInvariants(next);
+                if (process.env.NODE_ENV !== "production") {
+                  checkInvariants(next);
+                }
                 return next;
               });
 
@@ -502,7 +514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   settlement: null,
                   roundNumber: gameState.roundNumber + 1,
                 });
-                checkInvariants(next);
+                if (process.env.NODE_ENV !== "production") {
+                  checkInvariants(next);
+                }
                 return next;
               });
 

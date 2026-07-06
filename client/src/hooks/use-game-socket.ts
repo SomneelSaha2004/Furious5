@@ -148,15 +148,15 @@ export function useGameSocket(): UseGameSocketReturn {
     });
     
     // Monitor connection status
-    const checkConnection = () => {
-      setIsConnected(gameSocket.isConnected());
-      setConnectionState(gameSocket.getConnectionState());
-    };
-    
-    const interval = setInterval(checkConnection, 1000);
+    setIsConnected(gameSocket.isConnected());
+    setConnectionState(gameSocket.getConnectionState());
+
+    gameSocket.on('connection:change', (state) => {
+      setIsConnected(state === 'connected');
+      setConnectionState(state);
+    });
     
     return () => {
-      clearInterval(interval);
       gameSocket.off('room:created');
       gameSocket.off('room:joined');
       gameSocket.off('state:update');
@@ -165,6 +165,7 @@ export function useGameSocket(): UseGameSocketReturn {
       gameSocket.off('connection:lost');
       gameSocket.off('connection:restored');
       gameSocket.off('connection:failed');
+      gameSocket.off('connection:change');
     };
   }, [toast]);
   

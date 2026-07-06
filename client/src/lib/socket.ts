@@ -22,8 +22,21 @@ export class GameSocket {
     this.connect();
   }
   
+  private setConnectionState(state: 'connecting' | 'connected' | 'disconnected' | 'reconnecting'): void {
+    if (this.connectionState !== state) {
+      this.connectionState = state;
+      const handler = this.messageHandlers.get('connection:change');
+      if (handler) {
+        handler(state);
+      }
+    }
+  }
+  
   private connect(): void {
     this.shouldReconnect = true;
+    if (this.connectionState !== 'reconnecting') {
+      this.setConnectionState('connecting');
+    }
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     
@@ -31,7 +44,7 @@ export class GameSocket {
     
     this.ws.onopen = () => {
       console.log('WebSocket connected');
-      this.connectionState = 'connected';
+      this.setConnectionState('connected');
       this.reconnectAttempts = 0;
       this.lastPong = Date.now();
       this.startHeartbeat();
@@ -71,7 +84,7 @@ export class GameSocket {
         reason: event.reason,
         wasClean: event.wasClean,
       });
-      this.connectionState = 'disconnected';
+      this.setConnectionState('disconnected');
       this.stopHeartbeat();
       
       // Notify handlers of disconnection
@@ -123,7 +136,7 @@ export class GameSocket {
     
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      this.connectionState = 'reconnecting';
+      this.setConnectionState('reconnecting');
       console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
       
       this.reconnectTimer = window.setTimeout(() => {
@@ -131,7 +144,7 @@ export class GameSocket {
       }, Math.min(this.reconnectDelay * this.reconnectAttempts, 10000)); // Cap at 10 seconds
     } else {
       console.error('Max reconnection attempts reached');
-      this.connectionState = 'disconnected';
+      this.setConnectionState('disconnected');
       
       // Notify handlers of failed reconnection
       const handler = this.messageHandlers.get('connection:failed');
@@ -197,6 +210,7 @@ export class GameSocket {
       this.ws.close();
       this.ws = null;
     }
+    this.setConnectionState('disconnected');
   }
 }
 
