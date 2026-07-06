@@ -20,6 +20,7 @@ import {
   settleOnCall,
   checkInvariants,
   togglePlayerReady,
+  cardToString,
 } from "@shared/game-engine";
 import { joinOrReconnectPlayer } from "./room-join";
 
@@ -36,11 +37,7 @@ interface SocketMessage {
   data: any;
 }
 
-function formatCard(card: Card): string {
-  const rank = card.r === 1 ? "A" : card.r === 11 ? "J" : card.r === 12 ? "Q" : card.r === 13 ? "K" : card.r.toString();
-  const suit = card.s === "H" ? "H" : card.s === "D" ? "D" : card.s === "C" ? "C" : "S";
-  return `${rank}${suit}`;
-}
+
 
 function errorCodeForJoin(error: Error): string {
   if (error.message === "Room not found") return "ROOM_NOT_FOUND";
@@ -461,7 +458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const player = gameState.players.find((p) => p.id === socket.playerId);
                 const cardTaken = gameState.tableDrop?.cards[parsed.cardIndex];
                 if (cardTaken) {
-                  notification = `${player?.name || "Player"} drew ${formatCard(cardTaken)} from pile`;
+                  notification = `${player?.name || "Player"} drew ${cardToString(cardTaken)} from pile`;
                 }
 
                 const next = drawFromTable(gameState, socket.playerId!, parsed.cardIndex);
@@ -620,7 +617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         roomCode,
         playerId,
-        gameState,
+        gameState: redactGameStateForPlayer(gameState, playerId),
       });
     } catch (error) {
       console.error("HTTP: Error creating room:", error);
@@ -652,7 +649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         playerId,
-        gameState: updatedState,
+        gameState: redactGameStateForPlayer(updatedState, playerId),
       });
     } catch (error) {
       const err = error as Error;
