@@ -84,10 +84,10 @@ export default function Game() {
   const [httpGameState, setHttpGameState] = useState<GameState | null>(null);
   
   useEffect(() => {
-    if (!gameState && roomCode) {
+    if (!gameState && roomCode && playerId) {
       const fetchRoomState = async () => {
         try {
-          const response = await fetch(`/api/rooms/${roomCode}`);
+          const response = await fetch(`/api/rooms/${roomCode}?playerId=${playerId}`);
           const data = await response.json();
           
           if (data.success && data.gameState) {
@@ -104,7 +104,7 @@ export default function Game() {
       const timer = setTimeout(fetchRoomState, 2000);
       return () => clearTimeout(timer);
     }
-  }, [gameState, roomCode, markSessionAsStale]);
+  }, [gameState, roomCode, playerId, markSessionAsStale]);
   
   const fallbackGameState = useMemo<GameState>(() => ({
     roomCode: roomCode || 'FF-TEST',

@@ -34,7 +34,7 @@ export function shuffleDeck(deck: Card[]): Card[] {
 }
 
 export function sumPoints(cards: Card[]): number {
-  return cards.reduce((sum, card) => sum + card.r, 0);
+  return cards.reduce((sum, card) => sum + (card ? card.r : 0), 0);
 }
 
 export function removeCards(hand: Card[], toRemove: Card[]): Card[] {

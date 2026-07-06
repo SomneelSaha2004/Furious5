@@ -128,7 +128,7 @@ export function GameTableView({
             </div>
             {currentTurnPlayer && (
               <div className="bg-victory-gold/10 text-victory-gold font-bold px-4 py-2 rounded-xl border border-victory-gold/20 font-mono">
-                {sumPoints(currentTurnPlayer.hand)} pts
+                {isMyTurn ? `${sumPoints(currentTurnPlayer.hand)} pts` : '? pts'}
               </div>
             )}
           </div>

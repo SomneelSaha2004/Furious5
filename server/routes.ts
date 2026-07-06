@@ -49,6 +49,27 @@ function errorCodeForJoin(error: Error): string {
   return "JOIN_FAILED";
 }
 
+function redactGameStateForPlayer(state: GameState, playerId: string): any {
+  if (state.phase !== "playing") {
+    return state;
+  }
+
+  return {
+    ...state,
+    deck: Array(state.deck.length).fill(null),
+    graveyard: [],
+    players: state.players.map((player) => {
+      if (player.id === playerId) {
+        return player;
+      }
+      return {
+        ...player,
+        hand: Array(player.hand.length).fill(null),
+      };
+    }),
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ noServer: true });
@@ -82,10 +103,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const connections = roomConnections.get(roomCode);
     if (!connections) return;
 
-    const messageStr = JSON.stringify(message);
     for (const socket of Array.from(connections)) {
       if (socket !== excludeSocket && socket.readyState === WebSocket.OPEN) {
-        socket.send(messageStr);
+        let serializedMessage = message;
+        if (message.type === "state:update" && message.data) {
+          serializedMessage = {
+            ...message,
+            data: redactGameStateForPlayer(message.data, socket.playerId || ""),
+          };
+        }
+        socket.send(JSON.stringify(serializedMessage));
         metrics.incrementMessagesSent();
       }
     }
@@ -93,7 +120,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   function sendToSocket(socket: ExtendedWebSocket, message: any): void {
     if (socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(message));
+      let serializedMessage = message;
+      if (message.type === "state:update" && message.data) {
+        serializedMessage = {
+          ...message,
+          data: redactGameStateForPlayer(message.data, socket.playerId || ""),
+        };
+      }
+      socket.send(JSON.stringify(serializedMessage));
       metrics.incrementMessagesSent();
     }
   }
@@ -636,6 +670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/rooms/:roomCode", async (req, res) => {
     try {
       const { roomCode } = req.params;
+      const { playerId } = req.query;
       const gameState = await storage.getRoom(roomCode);
 
       if (!gameState) {
@@ -647,7 +682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        gameState,
+        gameState: redactGameStateForPlayer(gameState, (playerId as string) || ""),
       });
     } catch (error) {
       console.error("HTTP: Error getting room:", error);
