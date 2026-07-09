@@ -64,8 +64,8 @@ export function Card({ card, selected = false, faceDown = false, size = 'md', on
       className={cn(
         'relative flex flex-col items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-950 shadow-sm transition duration-200',
         sizeClasses[size],
-        selected && 'border-accent shadow-lg ring-2 ring-accent/45',
-        !selected && 'hover:-translate-y-1 hover:shadow-md',
+        selected && 'border-primary ring-4 ring-primary shadow-[0_0_20px_var(--primary)] -translate-y-3',
+        !selected && 'hover:-translate-y-2 hover:shadow-md',
         className,
       )}
       onClick={onClick}
