@@ -171,7 +171,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
           className={cn(
             "h-14 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all",
             canCallNow && isMyTurn
-              ? "chunky-button bg-loss-crimson text-white shadow-[0_4px_0_0_#9f1239] hover:brightness-110"
+              ? "chunky-button bg-loss-crimson text-white dark:text-rose-950 shadow-[0_4px_0_0_#9f1239] hover:brightness-110"
               : "bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-60"
           )}
         >
@@ -186,7 +186,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
           className={cn(
             "h-14 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all",
             isMyTurn && gameState.turnStage === 'start' && validDrop
-              ? "chunky-button bg-action-emerald text-white shadow-[0_4px_0_0_#064e3b] hover:brightness-110"
+              ? "chunky-button bg-action-emerald text-white dark:text-emerald-950 shadow-[0_4px_0_0_#064e3b] hover:brightness-110"
               : "bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-60"
           )}
         >
@@ -207,7 +207,7 @@ export function PlayerHand({ gameState, playerId, onCall, onDropCards, onDrawFro
           className={cn(
             "h-14 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all",
             isMyTurn && gameState.turnStage === 'dropped'
-              ? "chunky-button bg-primary text-white shadow-[0_4px_0_0_#002117] hover:brightness-110"
+              ? "chunky-button bg-primary text-white dark:text-emerald-950 shadow-[0_4px_0_0_#002117] hover:brightness-110"
               : "bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-60"
           )}
         >
