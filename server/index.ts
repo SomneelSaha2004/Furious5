@@ -19,7 +19,7 @@ app.set("trust proxy", 1);
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || "*",
+  origin: process.env.CORS_ORIGIN || "http://localhost:5000",
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -78,8 +78,8 @@ const wsLimiter = rateLimit({
 app.use("/ws", wsLimiter);
 
 // Body parsing middleware
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: false, limit: "10mb" }));
+app.use(express.json({ limit: "1kb" }));
+app.use(express.urlencoded({ extended: false, limit: "1kb" }));
 
 // Health check endpoint
 app.get("/health", async (_req, res) => {

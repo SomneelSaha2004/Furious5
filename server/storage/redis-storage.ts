@@ -82,7 +82,6 @@ export class RedisStorage implements IStorage {
       return undefined;
     }
 
-    await redis.expire(key, this.ttlSeconds);
     const parsed = JSON.parse(json);
     if (process.env.NODE_ENV !== "production") {
       return GameStateSchema.parse(parsed);
@@ -109,18 +108,29 @@ export class RedisStorage implements IStorage {
   async listActiveRooms(): Promise<string[]> {
     const redis = await this.getClient();
     const rooms = await redis.sMembers(ACTIVE_ROOMS_KEY);
-    const activeRooms: string[] = [];
+    if (rooms.length === 0) return [];
 
+    const pipeline = redis.multi();
     for (const roomCode of rooms) {
-      const exists = await redis.exists(this.roomKey(roomCode));
-      if (exists) {
-        activeRooms.push(roomCode);
+      pipeline.exists(this.roomKey(roomCode));
+    }
+    const results = (await pipeline.exec()) as unknown as number[];
+
+    const stale: string[] = [];
+    const active: string[] = [];
+    rooms.forEach((roomCode, i) => {
+      if (results[i]) {
+        active.push(roomCode);
       } else {
-        await redis.sRem(ACTIVE_ROOMS_KEY, roomCode);
+        stale.push(roomCode);
       }
+    });
+
+    if (stale.length > 0) {
+      redis.sRem(ACTIVE_ROOMS_KEY, stale).catch(() => undefined);
     }
 
-    return activeRooms;
+    return active;
   }
 
   async mutateRoom(

@@ -9,6 +9,7 @@ import {
   CreateRoomSchema,
   DropCardsSchema,
   DrawFromTableSchema,
+  GameGetStateSchema,
   type DropCardsData,
 } from "@shared/game-types";
 import {
@@ -30,6 +31,8 @@ interface ExtendedWebSocket extends WebSocket {
   playerName?: string;
   lastPing?: number;
   disconnectTimer?: NodeJS.Timeout;
+  messageCount?: number;
+  messageWindowStart?: number;
 }
 
 interface SocketMessage {
@@ -229,6 +232,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     socket.on("message", async (data) => {
+      const now = Date.now();
+      if (now - (socket.messageWindowStart || 0) > 1000) {
+        socket.messageCount = 0;
+        socket.messageWindowStart = now;
+      }
+      socket.messageCount = (socket.messageCount || 0) + 1;
+      if (socket.messageCount > 50) {
+        sendError(socket, "RATE_LIMIT_EXCEEDED", "Too many messages");
+        return;
+      }
+
       try {
         const message: SocketMessage = JSON.parse(data.toString());
         metrics.incrementMessagesReceived();
@@ -521,8 +535,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           case "game:getState": {
-            const roomCode = message.data?.roomCode || socket.roomCode;
-            const playerId = message.data?.playerId || socket.playerId;
+            const parsed = GameGetStateSchema.parse(message.data || {});
+            const roomCode = parsed.roomCode || socket.roomCode;
+            const playerId = parsed.playerId || socket.playerId;
 
             if (!roomCode) {
               sendError(socket, "NOT_IN_ROOM", "Not in a room");
@@ -694,27 +709,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
-  });
-
-  app.get("/api/health", async (_req, res) => {
-    let activeRooms: string[] = [];
-    let status = "healthy";
-
-    try {
-      activeRooms = await storage.listActiveRooms();
-    } catch (error) {
-      status = "degraded";
-      console.error("API health storage error:", error);
-    }
-
-    const snapshot = await metrics.snapshot(activeRooms.length);
-
-    res.json({
-      status,
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || "development",
-      ...snapshot,
-    });
   });
 
   return httpServer;

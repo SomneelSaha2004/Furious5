@@ -111,6 +111,11 @@ export const DrawFromTableSchema = z.object({
   cardIndex: z.number()
 });
 
+export const GameGetStateSchema = z.object({
+  roomCode: z.string().optional(),
+  playerId: z.string().optional()
+});
+
 // Server-to-Client events
 export const GameStateSchema = z.object({
   roomCode: z.string(),
