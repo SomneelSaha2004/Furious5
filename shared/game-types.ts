@@ -28,6 +28,7 @@ export interface Player {
   ready: boolean;
   hand: Card[];
   chipDelta: number;
+  userId?: string;
 }
 
 export type TableDrop = {
@@ -88,7 +89,8 @@ export const PlayerSchema = z.object({
   connected: z.boolean(),
   ready: z.boolean(),
   hand: z.array(CardSchema),
-  chipDelta: z.number()
+  chipDelta: z.number(),
+  userId: z.string().optional()
 });
 
 // Client-to-Server events

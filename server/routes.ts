@@ -24,15 +24,25 @@ import {
   cardToString,
 } from "@shared/game-engine";
 import { joinOrReconnectPlayer } from "./room-join";
+import { registerAuthRoutes } from "./auth-routes";
+import { getUserForSessionToken, SESSION_COOKIE_NAME } from "./auth";
+import { parseCookieHeader } from "./cookies";
 
 interface ExtendedWebSocket extends WebSocket {
   playerId?: string;
   roomCode?: string;
   playerName?: string;
+  sessionToken?: string;
   lastPing?: number;
   disconnectTimer?: NodeJS.Timeout;
   messageCount?: number;
   messageWindowStart?: number;
+}
+
+async function resolveUserId(sessionToken: string | undefined): Promise<string | undefined> {
+  if (!sessionToken) return undefined;
+  const user = await getUserForSessionToken(sessionToken);
+  return user?.id;
 }
 
 interface SocketMessage {
@@ -71,6 +81,8 @@ function redactGameStateForPlayer(state: GameState, playerId: string): any {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  registerAuthRoutes(app);
+
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ noServer: true });
   const roomConnections = new Map<string, Set<ExtendedWebSocket>>();
@@ -224,6 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
     updateActiveSocketMetric();
 
+    socket.sessionToken = parseCookieHeader(request.headers.cookie)[SESSION_COOKIE_NAME];
     socket.lastPing = Date.now();
 
     socket.on("pong", () => {
@@ -263,7 +276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             console.log(`Creating room ${roomCode} for player ${parsed.playerName} (${playerId})`);
 
-            const gameState = createGame(roomCode, parsed.playerName, playerId);
+            const userId = await resolveUserId(socket.sessionToken);
+            const gameState = createGame(roomCode, parsed.playerName, playerId, userId);
             await storage.createRoom(gameState);
             metrics.incrementRoomsCreated();
 
@@ -290,9 +304,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const newPlayerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
             try {
+              const userId = await resolveUserId(socket.sessionToken);
               let playerId = newPlayerId;
               const updatedState = await storage.mutateRoom(parsed.roomCode, async (gameState) => {
-                const result = joinOrReconnectPlayer(gameState, parsed.playerName, newPlayerId);
+                const result = joinOrReconnectPlayer(gameState, parsed.playerName, newPlayerId, userId);
                 playerId = result.playerId;
                 return result.state;
               });
@@ -630,7 +645,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const roomCode = generateRoomCode();
       const playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      const gameState = createGame(roomCode, parsed.playerName, playerId);
+      const userId = await resolveUserId(parseCookieHeader(req.headers.cookie)[SESSION_COOKIE_NAME]);
+      const gameState = createGame(roomCode, parsed.playerName, playerId, userId);
       await storage.createRoom(gameState);
       metrics.incrementRoomsCreated();
 
@@ -655,9 +671,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsed = JoinRoomSchema.parse(req.body);
       const newPlayerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      const userId = await resolveUserId(parseCookieHeader(req.headers.cookie)[SESSION_COOKIE_NAME]);
       let playerId = newPlayerId;
       const updatedState = await storage.mutateRoom(roomCode, async (gameState) => {
-        const result = joinOrReconnectPlayer(gameState, parsed.playerName, newPlayerId);
+        const result = joinOrReconnectPlayer(gameState, parsed.playerName, newPlayerId, userId);
         playerId = result.playerId;
         return result.state;
       });

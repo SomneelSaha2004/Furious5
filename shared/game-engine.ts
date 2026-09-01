@@ -169,16 +169,17 @@ export function canDrawFromTable(tableDrop: TableDrop, cardIndex: number): boole
 }
 
 // Game state mutations
-export function createGame(roomCode: string, playerName: string, playerId: string): GameState {
+export function createGame(roomCode: string, playerName: string, playerId: string, userId?: string): GameState {
   const deck = shuffleDeck(createDeck());
-  
+
   const player: Player = {
     id: playerId,
     name: playerName,
     connected: true,
     ready: false,
     hand: [],
-    chipDelta: 0
+    chipDelta: 0,
+    userId
   };
   
   return {
@@ -198,22 +199,23 @@ export function createGame(roomCode: string, playerName: string, playerId: strin
   };
 }
 
-export function joinGame(state: GameState, playerName: string, playerId: string): GameState {
+export function joinGame(state: GameState, playerName: string, playerId: string, userId?: string): GameState {
   if (state.players.length >= 5) {
     throw new Error('Room is full');
   }
-  
+
   if (state.players.some(p => p.id === playerId)) {
     throw new Error('Player already in game');
   }
-  
+
   const newPlayer: Player = {
     id: playerId,
     name: playerName,
     connected: true,
     ready: false,
     hand: [],
-    chipDelta: 0
+    chipDelta: 0,
+    userId
   };
   
   return {

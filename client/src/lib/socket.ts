@@ -188,6 +188,18 @@ export class GameSocket {
     this.lastRoomCode = roomCode;
     this.lastPlayerId = playerId;
   }
+
+  // The server reads the session cookie once, during the WS upgrade
+  // handshake — it has no way to notice a cookie set later by fetch(). Call
+  // this right after login/signup/logout so the next room:create/join
+  // resolves the correct (or now-absent) account identity.
+  public reconnectForFreshSession(): void {
+    if (this.ws) {
+      this.ws.close(); // existing onclose handler already reconnects and picks up the new cookie
+    } else {
+      this.connect();
+    }
+  }
   
   private flushPendingMessages(): void {
     if (this.pendingMessages.length > 0) {
