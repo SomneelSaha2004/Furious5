@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import React, { Suspense } from "react";
 import Home from "@/pages/home";
 const Game = React.lazy(() => import("@/pages/game"));
+const Account = React.lazy(() => import("@/pages/account"));
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home}/>
         <Route path="/game" component={Game}/>
+        <Route path="/account" component={Account}/>
         {/* Fallback to 404 */}
         <Route component={NotFound} />
       </Switch>

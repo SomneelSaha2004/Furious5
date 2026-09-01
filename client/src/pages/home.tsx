@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BrandMark } from '@/components/brand-mark';
 import { useGameSocket } from '@/hooks/use-game-socket';
+import { useAuth } from '@/hooks/use-auth';
 import {
   RotateCcw,
   Sparkles,
@@ -19,6 +20,8 @@ import {
   CheckCircle2,
   Layers,
   BookOpen,
+  CircleUserRound,
+  Trophy,
 } from 'lucide-react';
 import {
   Accordion,
@@ -32,6 +35,7 @@ export default function Home() {
   const [playerName, setPlayerName] = useState('');
   const [joinRoomCode, setJoinRoomCode] = useState('');
   const { createRoom, joinRoom, roomCode, clearRoom } = useGameSocket();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!roomCode) {
@@ -39,6 +43,13 @@ export default function Home() {
       localStorage.removeItem('furious-five-player-id');
     }
   }, [roomCode]);
+
+  useEffect(() => {
+    if (user && !playerName) {
+      setPlayerName(user.username);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleReset = () => {
     clearRoom();
@@ -156,6 +167,16 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-3 self-end sm:self-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation('/account')}
+              data-testid="button-account"
+              className="flex items-center gap-2 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white rounded-xl"
+            >
+              <CircleUserRound className="h-4 w-4" />
+              {user ? user.username : 'Sign in'}
+            </Button>
             <Button
               variant="outline"
               size="sm"

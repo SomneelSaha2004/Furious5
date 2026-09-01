@@ -27,6 +27,7 @@ import { joinOrReconnectPlayer } from "./room-join";
 import { registerAuthRoutes } from "./auth-routes";
 import { getUserForSessionToken, SESSION_COOKIE_NAME } from "./auth";
 import { parseCookieHeader } from "./cookies";
+import { persistSettlement } from "./stats";
 
 interface ExtendedWebSocket extends WebSocket {
   playerId?: string;
@@ -409,6 +410,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               broadcastToRoom(socket.roomCode, {
                 type: "state:update",
                 data: updatedState,
+              });
+
+              persistSettlement(updatedState).catch((error) => {
+                console.error("Failed to persist settlement:", error);
               });
             } catch (error) {
               sendError(socket, "CALL_FAILED", (error as Error).message);
