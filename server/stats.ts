@@ -57,3 +57,24 @@ export async function getRecentRounds(userId: string, limit = 5) {
     .orderBy(desc(roundHistory.createdAt))
     .limit(limit);
 }
+
+// Both leaderboards read straight off `users` — bounded by account count, not
+// by total rounds ever played, so this stays cheap regardless of how much the
+// app gets played. See roundsWon on `users`, maintained incrementally in
+// persistSettlement above rather than aggregated from round_history here.
+export async function getLeaderboard(by: "net" | "rounds", limit = 25) {
+  // A raw computed expression isn't a real numeric-mode column, so drizzle
+  // won't auto-parse postgres's string representation of it — mapWith(Number)
+  // does that conversion explicitly instead of silently returning "40.00".
+  const net = sql<number>`${users.chipsWon} - ${users.chipsLost}`.mapWith(Number);
+
+  return db
+    .select({
+      username: users.username,
+      net,
+      roundsWon: users.roundsWon,
+    })
+    .from(users)
+    .orderBy(by === "rounds" ? desc(users.roundsWon) : desc(net))
+    .limit(limit);
+}

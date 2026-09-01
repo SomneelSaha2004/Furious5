@@ -170,6 +170,16 @@ export default function Home() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setLocation('/leaderboard')}
+              data-testid="button-leaderboard"
+              className="flex items-center gap-2 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white rounded-xl"
+            >
+              <Trophy className="h-4 w-4" />
+              Leaderboard
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setLocation('/account')}
               data-testid="button-account"
               className="flex items-center gap-2 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white rounded-xl"
