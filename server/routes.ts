@@ -25,6 +25,7 @@ import {
 } from "@shared/game-engine";
 import { joinOrReconnectPlayer } from "./room-join";
 import { registerAuthRoutes } from "./auth-routes";
+import { registerLeaderboardRoutes } from "./leaderboard-routes";
 import { getUserForSessionToken, SESSION_COOKIE_NAME } from "./auth";
 import { parseCookieHeader } from "./cookies";
 import { persistSettlement } from "./stats";
@@ -83,6 +84,7 @@ function redactGameStateForPlayer(state: GameState, playerId: string): any {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   registerAuthRoutes(app);
+  registerLeaderboardRoutes(app);
 
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ noServer: true });
