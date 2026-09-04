@@ -31,11 +31,18 @@ if (isProduction) {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
+        // 'unsafe-inline' covers inline style="" attributes (Radix uses these
+        // for positioning); Google Fonts' stylesheet is a separate external
+        // source and needs its own allowance.
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        // Hash, not 'unsafe-inline': this is the one known inline script
+        // (index.html's theme-detection IIFE) — the exact hash Chrome reports
+        // for its current content. If that script's content ever changes,
+        // the browser console reports the new hash to swap in.
+        scriptSrc: ["'self'", "'sha256-gucZpqmxzta+CL7GIYHnf6GlVzJAqgp9my30sLM7o28='"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'", "ws:", "wss:"],
-        fontSrc: ["'self'"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
