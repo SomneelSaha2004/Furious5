@@ -74,7 +74,7 @@ export function SettlementView({ gameState, onStartNewRound }: SettlementViewPro
                 >
                   <div className="flex flex-col items-center gap-4">
                     <div className={cn(
-                      "w-16 h-16 rounded-full flex items-center justify-center text-white dark:text-[#0c1016] text-2xl font-bold",
+                      "w-16 h-16 rounded-full flex items-center justify-center text-[#0c1016] text-2xl font-bold",
                       isPositive ? "bg-action-emerald" : isNegative ? "bg-loss-crimson" : "bg-secondary"
                     )}>
                       {player.name[0]?.toUpperCase()}
@@ -181,7 +181,7 @@ export function SettlementView({ gameState, onStartNewRound }: SettlementViewPro
           <div className="pt-6">
             <button 
               onClick={onStartNewRound}
-              className="bg-action-emerald hover:brightness-110 text-white dark:text-[#0c1016] font-display font-semibold text-lg px-12 py-5 rounded-2xl chunky-button transition-all duration-200 flex items-center gap-3 mx-auto hover:scale-105 active:scale-95"
+              className="bg-action-emerald hover:brightness-110 text-[#0c1016] font-display font-semibold text-lg px-12 py-5 rounded-2xl chunky-button transition-all duration-200 flex items-center gap-3 mx-auto hover:scale-105 active:scale-95"
             >
               <RotateCcw className="h-5 w-5" />
               Start new round

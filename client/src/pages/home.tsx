@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/card'; // We can use the Card component we wrote!
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { BrandMark } from '@/components/brand-mark';
 import { useGameSocket } from '@/hooks/use-game-socket';
 import { useAuth } from '@/hooks/use-auth';
@@ -197,7 +196,6 @@ export default function Home() {
               <RotateCcw className="h-4 w-4" />
               Reset app
             </Button>
-            <ThemeToggle />
           </div>
         </header>
 

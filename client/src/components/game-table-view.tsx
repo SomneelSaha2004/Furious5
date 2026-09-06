@@ -113,8 +113,8 @@ export function GameTableView({
               <Users className="h-5 w-5 text-muted-foreground" />
               <span className="font-mono text-xs font-bold uppercase tracking-widest">Active Turn</span>
             </div>
-            <div className="flex items-center gap-1 text-secondary dark:text-secondary-foreground font-bold text-xs">
-              <Clock className="h-4 w-4 text-secondary dark:text-secondary-foreground" />
+            <div className="flex items-center gap-1 text-secondary-foreground font-bold text-xs">
+              <Clock className="h-4 w-4 text-secondary-foreground" />
               <span>{gameState.turnStage === 'dropped' ? 'Draw phase' : 'Drop phase'}</span>
             </div>
           </div>

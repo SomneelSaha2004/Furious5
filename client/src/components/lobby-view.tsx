@@ -67,8 +67,8 @@ export function LobbyView({ gameState, playerId, onStartGame, onToggleReady }: L
             </p>
           </div>
           <div className="bg-muted px-4 py-2 rounded-xl flex items-center gap-2 border border-border">
-            <Users className="h-4 w-4 text-secondary dark:text-secondary-foreground" />
-            <span className="font-mono text-xs font-bold text-secondary dark:text-secondary-foreground uppercase">
+            <Users className="h-4 w-4 text-secondary-foreground" />
+            <span className="font-mono text-xs font-bold text-secondary-foreground uppercase">
               {gameState.players.length} PLAYER{gameState.players.length === 1 ? '' : 'S'} CONNECTED
             </span>
           </div>
@@ -120,7 +120,7 @@ export function LobbyView({ gameState, playerId, onStartGame, onToggleReady }: L
                     <div className={cn(
                       'px-4 py-1.5 rounded-full font-mono text-xs font-bold flex items-center gap-2 border',
                       isReady 
-                        ? 'bg-action-emerald text-white dark:text-emerald-950 border-action-emerald' 
+                        ? 'bg-action-emerald text-emerald-950 border-action-emerald'
                         : 'bg-muted text-muted-foreground border-border'
                     )}>
                       {isReady && <Check className="h-3 w-3" />}
@@ -132,7 +132,7 @@ export function LobbyView({ gameState, playerId, onStartGame, onToggleReady }: L
 
               {/* Waiting Spot Placeholder if less than 2 players */}
               {gameState.players.length < 2 && (
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-dashed border-border">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-dashed border-border">
                   <div className="flex items-center gap-4 opacity-50">
                     <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                       <UserPlus className="h-5 w-5" />
@@ -189,8 +189,8 @@ export function LobbyView({ gameState, playerId, onStartGame, onToggleReady }: L
             className={cn(
               "chunky-button py-4 rounded-xl font-display font-bold flex items-center justify-center gap-3 transition-all",
               currentPlayer?.ready 
-                ? "bg-loss-crimson hover:brightness-110 text-white dark:text-rose-950 shadow-[0_4px_0_0_rgba(190,18,60,0.4)]"
-                : "bg-action-emerald hover:brightness-110 text-white dark:text-emerald-950 shadow-[0_4px_0_0_rgba(16,185,129,0.4)]"
+                ? "bg-loss-crimson hover:brightness-110 text-rose-950 shadow-[0_4px_0_0_rgba(190,18,60,0.4)]"
+                : "bg-action-emerald hover:brightness-110 text-emerald-950 shadow-[0_4px_0_0_rgba(16,185,129,0.4)]"
             )}
           >
             {currentPlayer?.ready ? (

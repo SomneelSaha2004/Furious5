@@ -5,7 +5,6 @@ import { LobbyView } from '@/components/lobby-view';
 import { GameTableView } from '@/components/game-table-view';
 import { SettlementView } from '@/components/settlement-view';
 import { BrandMark } from '@/components/brand-mark';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { useGameSocket } from '@/hooks/use-game-socket';
 import { Button } from '@/components/ui/button';
 import {
@@ -199,7 +198,6 @@ export default function Game() {
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">Leave game</span>
           </Button>
-          <ThemeToggle />
         </div>
       </header>
 

@@ -6,16 +6,7 @@
     <link rel="icon" href="/icons/F5.png" type="image/png" />
     <link rel="apple-touch-icon" href="/icons/F5.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#145a3d" />
-    <script>
-      (() => {
-        const stored = localStorage.getItem('furious-five-theme') || 'light';
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = stored === 'system' ? (prefersDark ? 'dark' : 'light') : stored;
-        document.documentElement.classList.add(theme);
-        document.documentElement.dataset.theme = theme;
-      })();
-    </script>
+    <meta name="theme-color" content="#051c11" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Poppins:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">

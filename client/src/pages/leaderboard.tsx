@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { BrandMark } from '@/components/brand-mark';
 import { useLeaderboard, type LeaderboardEntry } from '@/hooks/use-leaderboard';
 import { ArrowLeft, Trophy, Coins, Swords, Loader2 } from 'lucide-react';
@@ -19,7 +18,7 @@ function formatChips(value: number): string {
 const RANK_STYLES = [
   'bg-victory-gold/20 border-victory-gold/50 text-victory-gold',
   'bg-foreground/10 border-foreground/25 text-foreground',
-  'bg-orange-400/15 border-orange-400/40 text-orange-600 dark:text-orange-300',
+  'bg-orange-400/15 border-orange-400/40 text-orange-300',
 ] as const;
 
 function LeaderboardRow({
@@ -113,7 +112,6 @@ export default function Leaderboard() {
               <ArrowLeft className="h-4 w-4" />
               Back to lobby
             </Button>
-            <ThemeToggle />
           </div>
         </header>
 
