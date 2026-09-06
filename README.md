@@ -67,6 +67,10 @@ The GitHub Actions workflows also run type checking, production builds, artifact
 - Per-room mutation safety through `storage.mutateRoom(...)`.
 - Redis-backed room persistence when `REDIS_URL` is configured.
 - Local in-memory storage fallback for development.
+- Optional accounts (username, email, password) with session-cookie auth. Guests can still play without one.
+- Every settled round records chips won/lost and a round-history row for signed-in players; guests are untouched.
+- Account page with running totals and last 5 rounds played.
+- Public leaderboard (net chips, rounds won).
 - Runtime health endpoints with room, socket, Redis, memory, and uptime metrics.
 - Docker-first deployment path for Railway and other container hosts.
 
@@ -86,7 +90,9 @@ Backend:
 - Node.js 20+
 - Express
 - `ws` WebSocket server
-- Redis-ready storage adapter
+- Redis-ready storage adapter for live room state
+- Postgres (Supabase) via Drizzle ORM for accounts and game history
+- scrypt password hashing, opaque session-cookie auth
 - Zod validation
 - Helmet, CORS, compression, and rate limiting
 
@@ -103,20 +109,24 @@ Build and deployment:
 ```text
 Browser clients
   -> React frontend
-  -> WebSocket events over /ws
+  -> WebSocket events over /ws, HTTP for auth/leaderboard
   -> Express Node service
      -> serves the React app
      -> owns in-process WebSocket connection maps
      -> validates and applies game mutations
      -> persists room state in Redis when REDIS_URL is set
+     -> persists accounts and round history in Postgres when DATABASE_URL is set
      -> exposes health and metrics endpoints
 ```
+
+Redis and Postgres serve different lifetimes and are both optional independently: Redis holds live room state (gone after a TTL), Postgres holds accounts and history (permanent). Neither being configured still leaves a fully playable guest game — see [Runtime Storage](#runtime-storage) and [Accounts and Game History](#accounts-and-game-history).
 
 Current deployment target:
 
 ```text
 1 Dockerized Node service
 1 Redis service
+1 Postgres database (Supabase)
 1 app replica
 ```
 
@@ -154,6 +164,31 @@ storage.mutateRoom(roomCode, mutator)
 ```
 
 That gives the app one mutation path for joins, ready state changes, turn actions, reconnect status updates, and delayed disconnect handling.
+
+## Accounts and Game History
+
+Accounts are entirely optional — a room's players can be any mix of signed-in accounts and guests. Signing in only attaches `userId` to a player's seat at `room:create`/`room:join` time; the game itself works identically either way.
+
+Auth is a session cookie (`__Host-` prefixed, `httpOnly`, `Secure`, `SameSite=Lax`), backed by an opaque token whose SHA-256 (not the raw token) is stored server-side. Passwords are scrypt-hashed. See `server/auth.ts` and `server/auth-routes.ts`.
+
+Postgres tables (`shared/schema.ts`, via Drizzle):
+
+```text
+users           username, email, password hash, chipsWon, chipsLost, roundsWon
+sessions        session id (hashed), user id, expiry
+round_history   one row per settled round per signed-in seat: room, round #, signed payout
+```
+
+Every settlement writes `round_history` plus the running totals on `users` in one transaction (`server/stats.ts`), so a partial write can't desync a round's history from its effect on the totals.
+
+The leaderboard (`/api/leaderboard/net`, `/api/leaderboard/rounds`) reads only from `users`, never aggregates over `round_history`. That's deliberate: `users` is bounded by account count, while `round_history` grows with every round ever played and would get more expensive to aggregate the more the app is used. `roundsWon` is maintained incrementally at settlement time for exactly this reason.
+
+**Supabase pooler mode matters.** Use the **session pooler** (port `5432`), not the transaction pooler (`6543`) or the direct connection. The app is one long-running process, not serverless, so:
+
+- Direct connection is IPv6-only unless you pay for Supabase's IPv4 add-on.
+- Transaction-mode pooling does not reliably support prepared statements — a statement prepared during one transaction can silently misbehave if a later transaction lands on a different pooled backend connection. This produced a real bug during development: a second settlement in the same room reported success but never persisted, with no error anywhere, because the fix (`prepare: false` in `server/db.ts`) wasn't in place yet.
+
+`prepare: false` is set regardless, since it's strictly safer on both modes and costs only a little query-plan caching.
 
 ## WebSocket Contract
 
@@ -221,14 +256,21 @@ If Redis cannot be queried, health returns `status: "degraded"` and includes Red
 ## Project Structure
 
 ```text
-client/src/              React app
+client/src/pages/        Route-level pages (home, game, account, leaderboard)
+client/src/hooks/        use-game-socket, use-auth, use-leaderboard
 client/public/icons/     Web app icons and PWA assets
 server/index.ts          Express entrypoint, middleware, /health
 server/routes.ts         API routes and WebSocket handlers
 server/storage/          MemStorage, RedisStorage, mutation API
+server/db.ts             Postgres connection (Drizzle + postgres-js)
+server/auth.ts           Password hashing, session tokens, cookie config
+server/auth-routes.ts    Signup/login/logout/me endpoints
+server/stats.ts          Settlement persistence, history, leaderboard queries
+server/leaderboard-routes.ts  Public leaderboard endpoints
 server/metrics.ts        Runtime metrics snapshot
 shared/game-engine.ts    State transition logic
 shared/game-types.ts     Shared TypeScript types and Zod schemas
+shared/schema.ts         Drizzle schema (users, sessions, round_history)
 scripts/build.mjs        Production build script
 scripts/load-ws.ts       WebSocket load-test script
 Dockerfile               Production container build
@@ -253,7 +295,7 @@ Open:
 http://localhost:5000
 ```
 
-Local development uses `MemStorage` unless `REDIS_URL` is set.
+Local development uses `MemStorage` unless `REDIS_URL` is set, and accounts/history/leaderboard are unavailable (guest play is unaffected) unless `DATABASE_URL` is set.
 
 ## Scripts
 
@@ -284,9 +326,10 @@ REDIS_URL=redis://...
 ROOM_TTL_SECONDS=14400
 REDIS_LOCK_TTL_MS=5000
 REDIS_LOCK_TIMEOUT_MS=2000
+DATABASE_URL=postgresql://postgres.xxxxx:password@aws-region.pooler.supabase.com:5432/postgres
 ```
 
-`REDIS_URL` is the switch between local fallback storage and production Redis persistence.
+`REDIS_URL` is the switch between local fallback storage and production Redis persistence. `DATABASE_URL` is the same switch for accounts/history/leaderboard — use Supabase's **session pooler** connection string (port `5432`); see [Accounts and Game History](#accounts-and-game-history) for why.
 
 ## Deployment
 
@@ -299,6 +342,7 @@ NODE_ENV=production
 CORS_ORIGIN=https://your-app.up.railway.app
 ROOM_TTL_SECONDS=14400
 REDIS_URL=${{Redis.REDIS_URL}}
+DATABASE_URL=postgresql://postgres.xxxxx:password@aws-region.pooler.supabase.com:5432/postgres
 ```
 
 Keep app replicas at:
